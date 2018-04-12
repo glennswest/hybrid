@@ -1,0 +1,6 @@
+- hosts: windows
+  gather_facts: no
+  tasks:
+  - name: Set the config path
+    win_shell: '[Environment]::SetEnvironmentVariable("KUBECONFIG", "C:\k\config", [EnvironmentVariableTarget]::User)'
+

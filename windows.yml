@@ -1,0 +1,160 @@
+- hosts: windows
+  gather_facts: no
+  vars:
+     user: "{{lookup('env','USER')}}"
+  tasks:
+  - name: set up environment
+    shell: ln -f -s -n /etc/origin/ openshift.local.config
+    args:
+       chdir: /etc/origin
+    delegate_to: master1
+  - name: Create Config 
+    shell: oc adm create-node-config --hostnames={{inventory_hostname}} --node={{inventory_hostname}} --node-dir=/etc/origin/generated-configs/{{inventory_hostname}}
+    args:
+        chdir: /etc/origin/
+    delegate_to: master1
+  - name: Create archives per host
+    archive:
+       path: /etc/origin/generated-configs/{{inventory_hostname}}/*
+       dest: /etc/origin/generated-configs/{{inventory_hostname}}.tgz
+    delegate_to: master1
+- hosts: master1
+  become: yes
+  become_user: root
+  tasks:
+  - name: Create a archive of the node configs
+    archive: 
+       path: /etc/origin/generated-configs/*
+       dest:  /etc/origin/generated-configs.tgz 
+  - name: Move the configs to bastion
+    fetch: 
+       src:  /etc/origin/generated-configs/generated-configs.tgz
+       dest:  /tmp/
+       flat: yes
+       become: yes
+- hosts: 127.0.0.1
+  connection: local
+  sudo: yes
+  gather_facts: no
+  vars:
+     user: "{{lookup('env','USER')}}"
+  tasks:
+  - debug: msg="User is {{ user }}"
+  - name: Enable Pip
+    shell: yum-config-manager --enable epel
+  - name: Install PIP and Related
+    shell: yum install -y python-pip 
+  - name: disable epel
+    shell: yum-config-manager --disable epel
+  - name: Install PIP and Related
+    shell: yum install -y gcc libffi-devel python-devel krb5-devel krb5-libs krb5-workstation
+  - name: Install pywinrm
+    shell: pip install "pywinrm" --upgrade --force
+  - name: Install pywinrm keberos
+    shell: pip install pywinrm[kerberos]
+  - name: Setup local origin structure
+    file: 
+          path: /etc/origin/generated-configs
+          state: directory
+  - name: Extract configs
+    unarchive:
+       src: /tmp/generated-configs.tgz
+       dest: /etc/origin/generated-configs
+  - name: Fix the access mode
+    file:
+      path: /etc/origin/generated-configs
+      owner: "{{user}}"
+      recurse: yes
+  - name: Create windows directory for master1node files
+    file: 
+         path: /etc/origin/generated-configs/node-master1/windows
+         state: directory
+  - name: Fix system-node kubconfig
+    copy: 
+       src: /etc/origin/generated-configs/node-master1/system:node:master1.kubeconfig 
+       dest: /etc/origin/generated-configs/node-master1/windows/system-node-master1.kubeconfig
+       force: yes
+  - name: Fix system-node crt
+    copy: 
+       src: /etc/origin/generated-configs/node-master1/system:node:master1.crt
+       dest: /etc/origin/generated-configs/node-master1/windows/system-node-master1.crt
+       force: yes
+  - name: Fix system-node key
+    copy: 
+       src: /etc/origin/generated-configs/node-master1/system:node:master1.key
+       dest: /etc/origin/generated-configs/node-master1/windows/system-node-master1.key
+       force: yes
+- hosts: windows
+  gather_facts: no
+  vars:
+     user: "{{lookup('env','USER')}}"
+  tasks:
+  - name: Create Bin Directory
+    win_file:
+       path: c:\bin
+       state: directory
+  - name: Set Bin Path
+    win_shell: setx ChocolateyBinRoot "C:\bin" -m 
+  - name: Set Path
+    win_shell: setx PATH "C:\ProgramData\chocolatey\bin;$env:path;c:\bin;c:\k\hybrid\bin" -m 
+  - name: Install Package Manager
+    win_shell: Set-ExecutionPolicy Bypass -Scope Process -Force; iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
+  - name: Install 7zip
+    win_shell: choco install 7zip.portable -y
+  - name: Install Vim
+    win_shell: choco install vim -y
+  - name: Install git
+    win_shell: choco install git -y
+  - name: Install wget
+    win_shell: choco install wget -y
+  - name: Pull the kubernetes client
+    win_shell: Invoke-WebRequest -Uri "https://dl.k8s.io/v1.9.3/kubernetes-node-windows-amd64.tar.gz" -OutFile "C:\Users\{{ user }}\kubernetes.tar.gz"  
+  - name: Unzip kubernetes
+    win_shell: 7z x -aoa .\kubernetes.tar.gz
+  - name: Untar kubernetes
+    win_shell: 7z x -aoa kubernetes.tar
+  - name: Move the kube to bin
+    win_shell: copy "C:\Users\{{ user }}\kubernetes\node\bin\*" C:\bin
+  - name:  setup ovn
+    win_shell: 'msiexec /i openvswitch.msi ADDLOCAL="OpenvSwitchCLI,OpenvSwitchDriver,OVNHost" /qn'
+  - name: Cleanup any old config
+    win_file:
+       path: c:\k
+       state: absent
+  - name: Mkdir \k
+    win_file:
+       path: C:\k
+       state: directory
+  - name: move the node files
+    win_copy:
+      src: /etc/origin/generated-configs/{{inventory_hostname}}.tgz
+      dest: c:\k\{{inventory_hostname}}.tgz
+      force: yes
+  - name: Unzip the config files
+    win_shell: 7z x -aoa /k/{{inventory_hostname}}.tgz  -o\k\
+  - name: Unarchvie the config files
+    win_shell: 7z x -aoa /k/etc/origin/generated-configs/{{inventory_hostname}}.tgz -o/k
+  - name: Add the master1 cluster config file
+    win_copy:
+       src: /etc/origin/generated-configs/node-master1/windows/
+       dest: /k/
+       force: yes
+  - name: Cleanup archive path
+    win_file:
+       path: c:\k\etc
+       state: absent
+  - name: Setup client config
+    win_copy: 
+       src: "/home/{{user}}/.kube/config"
+       dest: /k/config
+       force: yes
+  - name: Set kubeconfig
+    win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-master1.kubeconfig', [System.EnvironmentVariableTarget]::Machine)"
+  - name: Set kubeconfig
+    win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-master1.kubeconfig')"
+  - name: Pull down hybrid directoy
+    win_shell: git clone https://github.com/glennswest/hybrid.git c:\k\hybrid
+  - name: Build the pause windows container
+    win_shell: docker build . -t kubeletwin/pause
+    args:
+      chdir: c:\k\hybrid

@@ -1,0 +1,7 @@
+- hosts: windows
+  gather_facts: no
+  vars:
+     user: "{{lookup('env','USER')}}"
+  tasks:
+  - name: Ping
+    win_ping:
