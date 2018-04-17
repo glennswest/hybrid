@@ -28,10 +28,21 @@
        dest:  /etc/origin/generated-configs.tgz 
   - name: Move the configs to bastion
     fetch: 
-       src:  /etc/origin/generated-configs/generated-configs.tgz
+       src:  /etc/origin/generated-configs.tgz
        dest:  /tmp/
        flat: yes
        become: yes
+  - name: Create the ovn scc account
+    shell: oc create serviceaccount ovn
+    ignore_errors: yes
+  - name: Add the cluster role
+    shell: oc adm policy add-cluster-role-to-user cluster-admin -z ovn
+  - name: Add the anyid field
+    shell:  oc adm policy add-scc-to-user anyuid -z ovn
+  - name: Save the token for later usage
+    shell: oc sa get-token ovn
+    register: ovn_key
+  - local_action: copy content={{ ovn_key }} dest=/root/ovn.token
 - hosts: 127.0.0.1
   connection: local
   sudo: yes
@@ -107,6 +118,19 @@
     win_shell: choco install git -y
   - name: Install wget
     win_shell: choco install wget -y
+  - name: Pull openvswitch
+    win_shell: wget.exe https://cloudbase.it/downloads/openvswitch-hyperv-2.7.0-certified.msi -O openvswitch.msi
+  - name: Install open vswitch
+    win_shell: cmd /c 'msiexec /i openvswitch.msi ADDLOCAL="OpenvSwitchCLI,OpenvSwitchDriver,OVNHost" /qn'
+    ignore_errors: yes
+  - name: Start ovs service
+    win_shell: Start-Service ovs-vswitchd
+  - name: Set up path for ovn
+    win_shell: setx PATH "C:\Program Files\Cloudbase Solutions\Open vSwitch\bin;$env:path" -m
+  - name: Install Hyber-V
+    win_shell: Install-WindowsFeature -Name RSAT-Hyper-V-Tools
+  - name: Enable Hyper-V
+    win_shell: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
   - name: Pull the kubernetes client
     win_shell: Invoke-WebRequest -Uri "https://dl.k8s.io/v1.9.3/kubernetes-node-windows-amd64.tar.gz" -OutFile "C:\Users\{{ user }}\kubernetes.tar.gz"  
   - name: Unzip kubernetes
@@ -115,8 +139,6 @@
     win_shell: 7z x -aoa kubernetes.tar
   - name: Move the kube to bin
     win_shell: copy "C:\Users\{{ user }}\kubernetes\node\bin\*" C:\bin
-  - name:  setup ovn
-    win_shell: 'msiexec /i openvswitch.msi ADDLOCAL="OpenvSwitchCLI,OpenvSwitchDriver,OVNHost" /qn'
   - name: Cleanup any old config
     win_file:
        path: c:\k
