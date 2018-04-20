@@ -1,0 +1,64 @@
+- hosts: masters
+  gather_facts: no
+  vars:
+     user: "{{lookup('env','USER')}}"
+     config_dir: "/etc/origin/master"
+  tasks:
+  - debug: msg="User is {{ user }}"
+  - name: Copy token to all masters
+    copy: 
+       src: /root/ovn.token
+       dest: "{{ config_dir }}/ovn.token"
+  - name: Create systemd file for ovn-kubernetes master
+    blockinfile:
+      dest: /etc/systemd/system/ovn-kubernetes-master.service
+      create: yes
+      block: |
+        [Unit]
+        Description=Setup for ovn-kubernetes master
+        Requires=openshift-master.service
+        After=openshift-master.service
+        After=ovn-kubernetes-master-setup.service
+
+        [Service]
+        Type=simple
+        ExecStart=/usr/local/bin/ovn-kubernetes-master.sh
+
+        [Install]
+        WantedBy=openshift-master.service
+        WantedBy=ovn-kubernetes-master-setup.service
+
+  - name: Create ovn-kubernetes-master.sh 
+    blockinfile:
+      dest: /usr/local/bin/ovn-kubernetes-master.sh
+      create: yes
+      block: |
+         #!/bin/bash
+
+         set -o errexit
+         set -o nounset
+         set -o pipefail
+
+         function ovn-kubernetes-master() {
+            local config_dir=$1
+            local kube_config="${config_dir}/admin.kubeconfig"
+
+            token=$(cat ${config_dir}/ovn.token)
+
+            local master_config="${config_dir}/master-config.yaml"
+            cluster_cidr=$(python -c "import yaml; stream = file('${master_config}', 'r'); y = yaml.load(stream); print y['networkConfig']['clusterNetworks'][0]['cidr']")
+            apiserver=$(oc --config="${kube_config}" config view -o custom-columns=server:clusters[0].cluster.server | grep http)
+            ovn_master_ip=$(echo -n ${apiserver} | cut -d "/" -f 3 | cut -d ":" -f 1)
+
+            echo "Enabling and start ovn-kubernetes master services"
+            /usr/bin/ovnkube \
+                 --k8s-apiserver "${apiserver}" \
+                 --k8s-cacert "${config_dir}/ca.crt" \
+                 --k8s-token "${token}" \
+                 --cluster-subnet "${cluster_cidr}" \
+                 --nb-address "tcp://${ovn_master_ip}:6641" \
+                  -sb-address "tcp://${ovn_master_ip}:6642" \
+                  --init-master `hostname` \
+                  --net-controller
+         }
+         ovn-kubernetes-master "{{ config_dir }}"

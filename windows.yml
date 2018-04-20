@@ -42,7 +42,7 @@
   - name: Save the token for later usage
     shell: oc sa get-token ovn
     register: ovn_key
-  - local_action: copy content={{ ovn_key }} dest=/root/ovn.token
+  - local_action: copy content={{ ovn_key.stdout }} dest=/root/ovn.token
 - hosts: 127.0.0.1
   connection: local
   sudo: yes
@@ -118,6 +118,10 @@
     win_shell: choco install git -y
   - name: Install wget
     win_shell: choco install wget -y
+  - name: Install Hyber-V
+    win_shell: Install-WindowsFeature -Name RSAT-Hyper-V-Tools
+  - name: Enable Hyper-V
+    win_shell: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
   - name: Pull openvswitch
     win_shell: wget.exe https://cloudbase.it/downloads/openvswitch-hyperv-2.7.0-certified.msi -O openvswitch.msi
   - name: Install open vswitch
@@ -127,10 +131,6 @@
     win_shell: Start-Service ovs-vswitchd
   - name: Set up path for ovn
     win_shell: setx PATH "C:\Program Files\Cloudbase Solutions\Open vSwitch\bin;$env:path" -m
-  - name: Install Hyber-V
-    win_shell: Install-WindowsFeature -Name RSAT-Hyper-V-Tools
-  - name: Enable Hyper-V
-    win_shell: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
   - name: Pull the kubernetes client
     win_shell: Invoke-WebRequest -Uri "https://dl.k8s.io/v1.9.3/kubernetes-node-windows-amd64.tar.gz" -OutFile "C:\Users\{{ user }}\kubernetes.tar.gz"  
   - name: Unzip kubernetes
