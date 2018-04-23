@@ -1,4 +1,40 @@
-- hosts: master3
+- hosts: localhost
+  become: yes
+  become_user: root
+  tasks:
+  - name: Install go
+    yum:
+      name: golang
+      enablerepo: rhel-7-server-optional-rpms
+  - name: Clear previous build if it exists
+    file: path=~/ovn-kubernetes state=absent
+  - name: Clone to ovn-kubernetes repo
+    shell: git clone https://github.com/openvswitch/ovn-kubernetes ~/ovn-kubernetes
+  - name: Create destination directory
+    file: path=/opt/cni/bin state=directory
+  - name: Build The Controller
+    shell: cd ovn-kubernetes;cd go-controller;make;make install
+- hosts: nodes
+  become: yes
+  become_user: root
+  tasks:
+  - name: Create /etc/cni/net.d
+    file: path=/etc/cni/net.d state=directory
+  - name: Create /opt/cni/bin
+    file: path=/opt/cni/bin state=directory
+  - name: Create openvswitch /etc directory
+    file: path=/etc/openvswitch state=directory
+  - name: Push the ovn-k8s-cni-overlay to all nodes
+    copy:
+      src: /opt/cni/bin/ovn-k8s-cni-overlay
+      dest: /opt/cni/bin/ovn-k8s-cni-overlay
+      mode: u+rwx
+  - name: Push the ovnkube to all nodes
+    copy:
+      src: /usr/bin/ovnkube
+      dest: /usr/bin/ovnkube
+      mode: u+rwx
+- hosts: masters
   become: yes
   become_user: root
   vars:
@@ -6,6 +42,7 @@
      config_dir: "/etc/origin/master"
   tasks:
   - debug: msg="User is {{ user }}"
+
   - name: Remove atomic-openshift-sdn-ovs
     yum:
       name=atomic-openshift-sdn-ovs
@@ -25,17 +62,18 @@
       block: |
         [Unit]
         Description=Setup for ovn-kubernetes master
-        Requires=openshift-master.service
-        After=openshift-master.service
-        After=ovn-kubernetes-master-setup.service
+        #Requires=openshift-master.service
+        #After=openshift-master.service
+        #After=ovn-kubernetes-master-setup.service
 
         [Service]
         Type=simple
         ExecStart=/usr/local/bin/ovn-kubernetes-master.sh
 
         [Install]
-        WantedBy=openshift-master.service
-        WantedBy=ovn-kubernetes-master-setup.service
+        WantedBy=multi-user.target
+        #WantedBy=openshift-master.service
+        #WantedBy=ovn-kubernetes-master-setup.service
 
   - name: Create ovn-kubernetes-master.sh 
     blockinfile:
@@ -72,7 +110,7 @@
          }
          ovn-kubernetes-master "{{ config_dir }}"
   - name: install upstream openvswitch 2.7
-    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-2.7.0-1.el7.x86_64.rpm
+    shell: rpm --replacepkgs -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-2.7.0-1.el7.x86_64.rpm
   - name: Install ovn common
     shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-common-2.7.0-1.el7.x86_64.rpm
   - name: install ovn central
@@ -80,10 +118,35 @@
   - name: Install ovn host
     shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-host-2.7.0-1.el7.x86_64.rpm
   - name: Install python-openvswitch
-    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/python-openvswitch-2.7.0-1.el7.noarch.rpm
+    shell: yum -y install python-openvswitch
   - name: Install ovn docker
     shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-docker-2.7.0-1.el7.x86_64.rpm
   - name: Install ovn vtep
     shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-vtep-2.7.0-1.el7.x86_64.rpm
   - name: Install ovn devel
-    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-devel-2.7.0-1.el7.x86_64.rpm
+    shell: rpm --replacepkgs -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-devel-2.7.0-1.el7.x86_64.rpm
+  - name: Get the api URL
+    shell: oc whoami --show-server
+    register: api_url
+  - local_action: copy content={{lookup('dig',api_url.stdout.rpartition('//')[2].split(':')[0])}} dest=/root/api_host.txt
+  - name: Create /etc/openvswitch/ovn_k8s.conf
+    blockinfile:
+      dest: /etc/openvswitch/ovn_k8s.conf
+      create: yes
+      block: |
+         [logging]
+         #loglevel=5
+         #logfile=/var/log/ovnkube.log
+         #https://gswmon.southcentralus.cloudapp.azure.com:8443
+         [kubernetes]
+         apiserver="https://{{lookup('file', '/root/api_host.txt')}}:8443"  # kubernetes api server, or the load balanced address for the multiple api server case
+         token="{{lookup('file', '/root/ovn.token')}}"
+         cacert=/etc/origin/master/ca.crt
+
+         [ovnnorth]
+         address="tcp://{{lookup('dig','master1')}}:6641" # this master machine's IP address
+
+         [ovnsouth]
+         address="tcp://{{lookup('dig','master1')}}:6642"
+
+
