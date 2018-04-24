@@ -2,6 +2,10 @@
   become: yes
   become_user: root
   tasks:
+  - name: Get server url
+    shell: "oc whoami --show-server"
+    register: api_url
+  - local_action: copy content={{lookup('dig',api_url.stdout.rpartition('//')[2].split(':')[0])}} dest=/root/api_host.txt
   - name: Install go
     yum:
       name: golang
@@ -18,6 +22,8 @@
   become: yes
   become_user: root
   tasks:
+  - name: Create the master directory 
+    file: path=/etc/origin/master state=directory
   - name: Create /etc/cni/net.d
     file: path=/etc/cni/net.d state=directory
   - name: Create /opt/cni/bin
@@ -34,7 +40,7 @@
       src: /usr/bin/ovnkube
       dest: /usr/bin/ovnkube
       mode: u+rwx
-- hosts: masters
+- hosts: nodes
   become: yes
   become_user: root
   vars:
@@ -75,6 +81,22 @@
         #WantedBy=openshift-master.service
         #WantedBy=ovn-kubernetes-master-setup.service
 
+  - name: install upstream openvswitch 2.7
+    shell: rpm --replacepkgs -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-2.7.0-1.el7.x86_64.rpm
+  - name: Install ovn common
+    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-common-2.7.0-1.el7.x86_64.rpm
+  - name: install ovn central
+    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-central-2.7.0-1.el7.x86_64.rpm
+  - name: Install ovn host
+    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-host-2.7.0-1.el7.x86_64.rpm
+  - name: Install python-openvswitch
+    shell: yum -y install python-openvswitch
+  - name: Install ovn docker
+    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-docker-2.7.0-1.el7.x86_64.rpm
+  - name: Install ovn vtep
+    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-vtep-2.7.0-1.el7.x86_64.rpm
+  - name: Install ovn devel
+    shell: rpm --replacepkgs -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-devel-2.7.0-1.el7.x86_64.rpm
   - name: Create ovn-kubernetes-master.sh 
     blockinfile:
       dest: /usr/local/bin/ovn-kubernetes-master.sh
@@ -95,7 +117,8 @@
             local master_config="${config_dir}/master-config.yaml"
             cluster_cidr=$(python -c "import yaml; stream = file('${master_config}', 'r'); y = yaml.load(stream); print y['networkConfig']['clusterNetworks'][0]['cidr']")
             apiserver=$(oc --config="${kube_config}" config view -o custom-columns=server:clusters[0].cluster.server | grep http)
-            ovn_master_ip=$(echo -n ${apiserver} | cut -d "/" -f 3 | cut -d ":" -f 1)
+            ovn_master_host=$(echo -n ${apiserver} | cut -d "/" -f 3 | cut -d ":" -f 1)
+            ovn_master_ip=$(dig +short $ovn_master_host)
 
             echo "Enabling and start ovn-kubernetes master services"
             /usr/bin/ovnkube \
@@ -103,32 +126,12 @@
                  --k8s-cacert "${config_dir}/ca.crt" \
                  --k8s-token "${token}" \
                  --cluster-subnet "${cluster_cidr}" \
-                 --nb-address "tcp://${ovn_master_ip}:6641" \
-                  -sb-address "tcp://${ovn_master_ip}:6642" \
+                 --nb-address "tcp://{{lookup('dig','master1')}}:6641" \
+                  -sb-address "tcp://{{lookup('dig','master1')}}:6642" \
                   --init-master `hostname` \
                   --net-controller
          }
          ovn-kubernetes-master "{{ config_dir }}"
-  - name: install upstream openvswitch 2.7
-    shell: rpm --replacepkgs -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-2.7.0-1.el7.x86_64.rpm
-  - name: Install ovn common
-    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-common-2.7.0-1.el7.x86_64.rpm
-  - name: install ovn central
-    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-central-2.7.0-1.el7.x86_64.rpm
-  - name: Install ovn host
-    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-host-2.7.0-1.el7.x86_64.rpm
-  - name: Install python-openvswitch
-    shell: yum -y install python-openvswitch
-  - name: Install ovn docker
-    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-docker-2.7.0-1.el7.x86_64.rpm
-  - name: Install ovn vtep
-    shell: rpm -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-ovn-vtep-2.7.0-1.el7.x86_64.rpm
-  - name: Install ovn devel
-    shell: rpm --replacepkgs -i http://cbs.centos.org/kojifiles/packages/openvswitch/2.7.0/1.el7/x86_64/openvswitch-devel-2.7.0-1.el7.x86_64.rpm
-  - name: Get the api URL
-    shell: oc whoami --show-server
-    register: api_url
-  - local_action: copy content={{lookup('dig',api_url.stdout.rpartition('//')[2].split(':')[0])}} dest=/root/api_host.txt
   - name: Create /etc/openvswitch/ovn_k8s.conf
     blockinfile:
       dest: /etc/openvswitch/ovn_k8s.conf
@@ -148,5 +151,11 @@
 
          [ovnsouth]
          address="tcp://{{lookup('dig','master1')}}:6642"
-
-
+  - name: open firewall 6641
+    shell: iptables -A INPUT -p tcp --dport 6641 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT; iptables -A OUTPUT -p tcp --sport 6641 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+  - name: open firewall 6642
+    shell: iptables -A INPUT -p tcp --dport 6642 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT; iptables -A OUTPUT -p tcp --sport 6642 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+  - name: open firewall 6081
+    shell: iptables -A INPUT -p udp --dport 6081 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT; iptables -A OUTPUT -p udp --sport 6081 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+  - name: Save iptables rules
+    shell: service iptables save
