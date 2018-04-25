@@ -1,22 +1,17 @@
-- hosts: masters
+- hosts: localhost
   become: yes
   become_user: root
   tasks:
-  - name: Remove old network setup
-    shell: cd /etc/origin/master;sed -i.bak '/networkConfig:/,/oauthConfig:/{//!d}' master-config.yaml
-  - name: Add new network setup
-    blockinfile:
-       dest: /etc/origin/master/master-config.yaml
-       insertafter: "networkConfig:"
-       create: no
-       block: |
-                 #
-                   clusterNetworks:
-                   - cidr: 10.128.0.0/14
-                     hostSubnetLength: 9
-                   externalIPNetworkCIDRs: null
-                   ingressIPNetworkCIDR: 172.29.0.0/16
-                   networkPluginName: ovn-k8s-cni-overlay
-                   serviceNetworkCIDR: 172.30.0.0/16
+  - name: Get cni plugins
+    shell: wget https://github.com/containernetworking/plugins/releases/download/v0.7.1/cni-plugins-amd64-v0.7.1.tgz; tar xvzf cni-plugins-amd64-v0.7.1.tgz -C /tmp/cniplugin
+- hosts: nodes
+  become: yes
+  become_user: root
+  tasks:
+  - name: Push the cni loopback plugin to all nodes
+    copy:
+      src: /tmp/cniplugin/loopback
+      dest: /opt/cni/bin/loopback
+      mode: u+rwx
 
 

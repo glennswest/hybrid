@@ -18,6 +18,8 @@
     file: path=/opt/cni/bin state=directory
   - name: Build The Controller
     shell: cd ovn-kubernetes;cd go-controller;make;make install
+  - name: Get cni plugins
+    shell: wget https://github.com/containernetworking/plugins/releases/download/v0.7.1/cni-plugins-amd64-v0.7.1.tgz; tar xvzf cni-plugins-amd64-v0.7.1.tgz -C /tmp/cniplugin
 - hosts: nodes
   become: yes
   become_user: root
@@ -37,6 +39,11 @@
     copy:
       src: /usr/bin/ovnkube
       dest: /usr/bin/ovnkube
+      mode: u+rwx
+  - name: Push the cni loopback plugin to all nodes
+    copy:
+      src: /tmp/cniplugin/loopback
+      dest: /opt/cni/bin/loopback
       mode: u+rwx
   - name: Create destination directory
     file: path=/etc/cni/net.d state=directory
