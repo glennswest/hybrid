@@ -26,6 +26,7 @@
     archive: 
        path: /etc/origin/generated-configs/*
        dest:  /etc/origin/generated-configs.tgz 
+       mode:  666
   - name: Move the configs to bastion
     fetch: 
        src:  /etc/origin/generated-configs.tgz
@@ -132,13 +133,13 @@
   - name: Set up path for ovn
     win_shell: setx PATH "C:\Program Files\Cloudbase Solutions\Open vSwitch\bin;$env:path" -m
   - name: Pull the kubernetes client
-    win_shell: Invoke-WebRequest -Uri "https://dl.k8s.io/v1.9.3/kubernetes-node-windows-amd64.tar.gz" -OutFile "C:\Users\{{ user }}\kubernetes.tar.gz"  
+    win_shell: wget.exe https://dl.k8s.io/v1.9.3/kubernetes-node-windows-amd64.tar.gz -O C:\Windows\Temp\kubernetes.tar.gz  
   - name: Unzip kubernetes
-    win_shell: 7z x -aoa .\kubernetes.tar.gz
+    win_shell: 7z x -aoa C:\Windows\Temp\kubernetes.tar.gz -o\Windows\Temp
   - name: Untar kubernetes
-    win_shell: 7z x -aoa kubernetes.tar
+    win_shell: 7z x -aoa c:\Windows\Temp\kubernetes.tar -o\Windows\Temp
   - name: Move the kube to bin
-    win_shell: copy "C:\Users\{{ user }}\kubernetes\node\bin\*" C:\bin
+    win_shell: copy "C:\Windows\Temp\kubernetes\node\bin\*" C:\bin
   - name: Cleanup any old config
     win_file:
        path: c:\k
