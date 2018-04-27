@@ -3,13 +3,15 @@
   vars:
      user: "{{lookup('env','USER')}}"
   tasks:
-  - name: copy ovn-k8s-cni-overlay.exe
-    copy: 
-       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
-       dest: /bin/ovn-k8s-cni-overlay.exe
+  - name: Setup client config
+    win_copy:
+       src: /root/ovn.token
+       dest: /k/config
        force: yes
-  - name: copy ovn ovnkube.exe
-    copy: 
-       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
-       dest: /bin/ovnkube.exe
-       force: yes
+  - name: Create start-net.bat
+    win_copy:
+      dest: /bin/start-net.bat
+      force: yes
+      content: |
+        ovnkube --init-node msnode01 --k8s-cacert c:\k\node-client-ca.crt --k8s-apiserver https://gswmon.southcentralus.cloudapp.azure.com:8443  --k8s-token {{ lookup('file', '/root/ovn.token') }}
+
