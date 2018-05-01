@@ -1,28 +1,87 @@
-- hosts: windows
-  gather_facts: no
-  vars:
-     user: "{{lookup('env','USER')}}"
-  tasks:
-  - name: Setup client config
-    win_copy:
-       src: /root/ovn.token
-       dest: /k/config
-       force: yes
-  - name: Create start-net.bat
-    win_copy:
-      dest: /bin/start-net.bat
-      force: yes
-      content: |
-        ovnkube --init-node msnode01 --k8s-cacert c:\k\node-client-ca.crt --k8s-apiserver https://gswmon.southcentralus.cloudapp.azure.com:8443  --k8s-token {{ lookup('file', '/root/ovn.token') }}
-  - name: copy ovn-k8s-cni-overlay.exe
-    win_copy:
-       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
-       dest: /bin/ovn-k8s-cni-overlay.exe
-       force: yes
-  - name: copy ovn ovnkube.exe
-    win_copy:
-       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
-       dest: /bin/ovnkube.exe
-       force: yes
-
-
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    ovn_host_subnet: 10.128.8.0/24
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: 2018-05-01T06:53:33Z
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: windows
+    kubernetes.io/hostname: msnode01
+  name: msnode01
+  resourceVersion: "193727"
+  selfLink: /api/v1/nodes/msnode01
+  uid: 5d95bfaf-4d0c-11e8-902b-000d3a75b82e
+spec:
+  externalID: msnode01
+status:
+  addresses:
+  - address: 10.0.1.5
+    type: InternalIP
+  - address: msnode01
+    type: Hostname
+  allocatable:
+    cpu: "8"
+    memory: 28Gi
+    pods: "110"
+  capacity:
+    cpu: "8"
+    memory: 28Gi
+    pods: "110"
+  conditions:
+  - lastHeartbeatTime: 2018-05-01T07:17:26Z
+    lastTransitionTime: 2018-05-01T06:53:33Z
+    message: kubelet has sufficient disk space available
+    reason: KubeletHasSufficientDisk
+    status: "False"
+    type: OutOfDisk
+  - lastHeartbeatTime: 2018-05-01T07:17:26Z
+    lastTransitionTime: 2018-05-01T06:53:33Z
+    message: kubelet has sufficient memory available
+    reason: KubeletHasSufficientMemory
+    status: "False"
+    type: MemoryPressure
+  - lastHeartbeatTime: 2018-05-01T07:17:26Z
+    lastTransitionTime: 2018-05-01T06:53:33Z
+    message: kubelet has no disk pressure
+    reason: KubeletHasNoDiskPressure
+    status: "False"
+    type: DiskPressure
+  - lastHeartbeatTime: 2018-05-01T07:17:26Z
+    lastTransitionTime: 2018-05-01T06:53:33Z
+    message: kubelet is posting ready status
+    reason: KubeletReady
+    status: "True"
+    type: Ready
+  daemonEndpoints:
+    kubeletEndpoint:
+      Port: 10250
+  images:
+  - names:
+    - kubeletwin/pause:latest
+    sizeBytes: 10471882874
+  - names:
+    - microsoft/windowsservercore@sha256:c8585000d7008088b86aa3a3cf55330b37d6ae57eaf18b085c560cdb42a0097d
+    - microsoft/windowsservercore:latest
+    sizeBytes: 10471800905
+  - names:
+    - microsoft/windowsservercore@sha256:dfc84737964de95ec888ae25aa70affd815ded546e30491dec630205f8297012
+    - microsoft/windowsservercore:1709
+    sizeBytes: 6210275092
+  - names:
+    - microsoft/nanoserver@sha256:d4f3009d49899f875cce927ab9c051179145309752378a36c37c70ea67bda165
+    - microsoft/nanoserver:1709
+    sizeBytes: 313692995
+  nodeInfo:
+    architecture: amd64
+    bootID: ""
+    containerRuntimeVersion: docker://17.6.2
+    kernelVersion: |
+      10.0.16299.309
+    kubeProxyVersion: v1.9.3
+    kubeletVersion: v1.9.3
+    machineID: winnode01
+    operatingSystem: windows
+    osImage: Windows Server Datacenter
+    systemUUID: ""

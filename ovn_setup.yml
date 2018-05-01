@@ -251,9 +251,21 @@
     service:
         name: atomic-openshift-node
         state: restarted
+- hosts: node01
+  tasks:
+  - name: Grab /etc/openvswitch/ovn_k8s.conf
+    fetch: 
+      src:  /etc/openvswitch/ovn_k8s.conf
+      dest: /tmp/ovn_k8s.conf
+      flat: yes
 - hosts: windows
   gather_facts: no
   tasks:
+  - name: Copy ovn_k8s.conf to windows nodes
+    win_copy:
+       src: /tmp/ovn_k8s.conf
+       dest: C:\Program Files\Cloudbase Solutions\Open vSwitch\conf\ovn_k8s.conf
+       force: yes
   - name: copy ovn-k8s-cni-overlay.exe
     win_copy:
        src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
