@@ -196,6 +196,11 @@
         name: ovsdb-server
         state: started
         enabled: yes
+  - name: enable ovn-northd
+    service:
+        name: ovn-northd
+        state: started
+        enabled: yes
   - name: Start openvswitch
     service:
         name: openvswitch
