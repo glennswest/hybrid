@@ -4,7 +4,7 @@ Get-VMSwitch -SwitchType External | Set-VMSwitch -AllowManagementOS $false
 # Ignore the error from the first command
 Get-VMSwitch -SwitchType External | Set-VMSwitch -AllowManagementOS $false
 ovs-vsctl --no-wait --may-exist add-br br-ex
-ovs-vsctl --no-wait add-port br-ex '$INTERFACE_ALIAS'
+ovs-vsctl --no-wait add-port br-ex "$INTERFACE_ALIAS"
 Get-VMSwitch -SwitchType External | Enable-VMSwitchExtension "Cloudbase Open vSwitch Extension"; sleep 2; Restart-Service ovs-vswitchd
 # Clone the MAC Address of $INTERFACE_ALIAS on br-ex
 $MAC_ADDRESS=$(Get-NetAdapter "$INTERFACE_ALIAS").MacAddress
