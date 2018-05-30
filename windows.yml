@@ -175,6 +175,10 @@
     win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-master1.kubeconfig', [System.EnvironmentVariableTarget]::Machine)"
   - name: Set kubeconfig
     win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-master1.kubeconfig')"
+  - name: Install the hyperV Network Tools
+    win_shell: "Install-WindowsFeature -Name RSAT-Hyper-V-Tools"
+  - name: Enable Hyper-V Features
+    win_shell: "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All"
   - name: Pull down hybrid directoy
     win_shell: git clone https://github.com/glennswest/hybrid.git c:\k\hybrid
   - name: Build the pause windows container
