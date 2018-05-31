@@ -1,3 +1,12 @@
+- hosts: master1
+  become: yes
+  become_user: root
+  tasks:
+  - name: Get the /etc/origin/master/ca.crt
+    fetch:
+          src: /etc/origin/master/ca.crt
+          dest: /root/
+          flat: yes
 - hosts: localhost
   become: yes
   become_user: root
@@ -5,7 +14,7 @@
   - name: Get server url
     shell: "oc whoami --show-server"
     register: api_url
-  - local_action: copy content={{lookup('dig',api_url.stdout.rpartition('//')[2].split(':')[0])}} dest=/root/api_host.txt
+  - local_action: copy content="{{ api_url.stdout }}" dest=/root/api_host.txt
   - name: Install go
     yum:
       name: golang
@@ -32,6 +41,11 @@
   tasks:
   - name: Create the master directory 
     file: path=/etc/origin/master state=directory
+  - name: Place Crt 
+    copy:
+       src: /root/ca.crt
+       dest: /etc/origin/master
+       mode: u+rw
   - name: Create /opt/cni/bin
     file: path=/opt/cni/bin state=directory
   - name: Create openvswitch /etc directory
@@ -75,6 +89,7 @@
   vars:
      user: "{{lookup('env','USER')}}"
      config_dir: "/etc/origin/master"
+     apihost: "{{ lookup('file', '/root/api_host.txt') }}"
   tasks:
   - debug: msg="User is {{ user }}"
 
@@ -90,6 +105,21 @@
     copy: 
        src: /root/ovn.token
        dest: "{{ config_dir }}/ovn.token"
+  - name: Create systemd file for ovn-kubernetes node
+    blockinfile:
+      dest: /etc/systemd/system/ovn-kubernetes-node.service
+      create: yes
+      block: |
+        [Unit]
+        Description=Setup for ovn-kubernetes Node
+
+        [Service]
+        Type=simple
+        ExecStart=/bin/bash /usr/local/bin/ovn-kubernetes-node.sh
+
+        [Install]
+        WantedBy=multi-user.target
+
   - name: Create systemd file for ovn-kubernetes master
     blockinfile:
       dest: /etc/systemd/system/ovn-kubernetes-master.service
@@ -97,9 +127,6 @@
       block: |
         [Unit]
         Description=Setup for ovn-kubernetes master
-        #Requires=openshift-master.service
-        #After=openshift-master.service
-        #After=ovn-kubernetes-master-setup.service
 
         [Service]
         Type=simple
@@ -132,6 +159,7 @@
     blockinfile:
       dest: /usr/local/bin/ovn-kubernetes-master.sh
       create: yes
+      mode: u+rwx
       block: |
 
          set -o errexit
@@ -140,15 +168,11 @@
 
          function ovn-kubernetes-master() {
             local config_dir=$1
-            local kube_config="${config_dir}/admin.kubeconfig"
-
             token=$(cat ${config_dir}/ovn.token)
 
             local master_config="${config_dir}/master-config.yaml"
-            cluster_cidr=$(python -c "import yaml; stream = file('${master_config}', 'r'); y = yaml.load(stream); print y['networkConfig']['clusterNetworks'][0]['cidr']")
-            apiserver=$(oc --config="${kube_config}" config view -o custom-columns=server:clusters[0].cluster.server | grep http)
-            ovn_master_host=$(echo -n ${apiserver} | cut -d "/" -f 3 | cut -d ":" -f 1)
-            ovn_master_ip=$(dig +short $ovn_master_host)
+            cluster_cidr="10.128.0.0/14"
+            apiserver="{{lookup('file', '/root/api_host.txt')}}" 
 
             echo "Enabling and start ovn-kubernetes master services"
             /usr/bin/ovnkube \
@@ -162,6 +186,35 @@
                   --net-controller
          }
          ovn-kubernetes-master "{{ config_dir }}"
+  - name: Create ovn-kubernetes-node.sh 
+    blockinfile:
+      dest: /usr/local/bin/ovn-kubernetes-node.sh
+      create: yes
+      mode: u+rwx
+      block: |
+
+         set -o errexit
+         set -o nounset
+         set -o pipefail
+
+         function ovn-kubernetes-node() {
+            local config_dir=$1
+            token=$(cat ${config_dir}/ovn.token)
+
+            apiserver="{{lookup('file', '/root/api_host.txt')}}" 
+            cluster_cidr="10.128.0.0/14"
+
+            echo "Enabling and start ovn-kubernetes node services"
+            /usr/bin/ovnkube \
+                 --k8s-apiserver "${apiserver}" \
+                 --k8s-cacert "${config_dir}/ca.crt" \
+                 --k8s-token "${token}" \
+                 --cluster-subnet "${cluster_cidr}" \
+                 --nb-address "tcp://{{lookup('dig','master1')}}:6641" \
+                 --sb-address "tcp://{{lookup('dig','master1')}}:6642" \
+                 --init-node `hostname` 
+         }
+         ovn-kubernetes-node "{{ config_dir }}"
   - name: Clear old config file
     file: path=/etc/openvswitch/ovn_k8s.conf state=absent
   - name: Create /etc/openvswitch/ovn_k8s.conf
@@ -174,7 +227,7 @@
          #logfile=/var/log/ovnkube.log
          #https://gswmon.southcentralus.cloudapp.azure.com:8443
          [kubernetes]
-         apiserver="https://{{lookup('file', '/root/api_host.txt')}}:8443"  # kubernetes api server, or the load balanced address for the multiple api server case
+         apiserver="{{lookup('file', '/root/api_host.txt')}}"  # kubernetes api server, or the load balanced address for the multiple api server case
          token="{{lookup('file', '/root/ovn.token')}}"
          cacert=/etc/origin/master/ca.crt
 
@@ -184,11 +237,11 @@
          [ovnsouth]
          address="tcp://{{lookup('dig','master1')}}:6642"
   - name: open firewall 6641
-    shell: iptables -A INPUT -p tcp --dport 6641 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT; iptables -A OUTPUT -p tcp --sport 6641 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+    shell: iptables -A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m tcp --dport 6641 -j ACCEPT
   - name: open firewall 6642
-    shell: iptables -A INPUT -p tcp --dport 6642 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT; iptables -A OUTPUT -p tcp --sport 6642 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+    shell: iptables -A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m tcp --dport 6642 -j ACCEPT
   - name: open firewall 6081
-    shell: iptables -A INPUT -p udp --dport 6081 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT; iptables -A OUTPUT -p udp --sport 6081 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+    shell: iptables -A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m tcp --dport 6081 -j ACCEPT
   - name: Save iptables rules
     shell: service iptables save
   - name: enable ovsdb-server
@@ -206,9 +259,19 @@
         name: openvswitch
         state: started
         enabled: yes
+  - name: Start ovn-controller
+    service:
+        name: ovn-controller
+        state: started
+        enabled: yes
   - name: enable ovn-kubernetes-master.service
     service:
         name: ovn-kubernetes-master.service
+        state: started
+        enabled: yes
+  - name: enable ovn-kubernetes-node.service
+    service:
+        name: ovn-kubernetes-node.service
         state: started
         enabled: yes
 - hosts: masters
