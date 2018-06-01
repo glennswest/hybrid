@@ -267,13 +267,13 @@
   - name: enable ovn-kubernetes-master.service
     service:
         name: ovn-kubernetes-master.service
-        state: started
-        enabled: yes
+        state: stopped
+        enabled: no
   - name: enable ovn-kubernetes-node.service
     service:
         name: ovn-kubernetes-node.service
-        state: started
-        enabled: yes
+        state: stopped
+        enabled: no
 - hosts: masters
   become: yes
   become_user: root
@@ -344,5 +344,21 @@
        src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
        dest: /bin/ovnkube.exe
        force: yes
-
-
+- hosts: master1
+  become: yes
+  become_user: root
+  tasks:
+  - name: enable ovn-kubernetes-master.service
+    service:
+        name: ovn-kubernetes-master.service
+        state: started
+        enabled: yes
+- hosts: nodes:!master1
+  become: yes
+  become_user: root
+  tasks:
+  - name: enable ovn-kubernetes-node.service
+    service:
+        name: ovn-kubernetes-node.service
+        state: started
+        enabled: yes
