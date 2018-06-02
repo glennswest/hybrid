@@ -212,6 +212,7 @@
                  --cluster-subnet "${cluster_cidr}" \
                  --nb-address "tcp://{{lookup('dig','master1')}}:6641" \
                  --sb-address "tcp://{{lookup('dig','master1')}}:6642" \
+                 --init-gateways \
                  --init-node `hostname` 
          }
          ovn-kubernetes-node "{{ config_dir }}"
