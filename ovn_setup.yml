@@ -242,7 +242,7 @@
   - name: open firewall 6642
     shell: iptables -A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m tcp --dport 6642 -j ACCEPT
   - name: open firewall 6081
-    shell: iptables -A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m tcp --dport 6081 -j ACCEPT
+    shell: iptables -A OS_FIREWALL_ALLOW -p udp -m state --state NEW -m udp --dport 6081 -j ACCEPT
   - name: Save iptables rules
     shell: service iptables save
   - name: enable ovsdb-server

@@ -5,8 +5,13 @@
      user: "{{lookup('env','USER')}}"
      config_dir: "/etc/origin/master"
      apihost: "{{ lookup('file', '/root/api_host.txt') }}"
-
   tasks:
+  - name: Make sure azure directory exists
+    file: path=/etc/azure state=directory
+  - name: Make sure azure.conf is in the right place
+    shell: cp /etc/origin/cloudprovider/azure.conf /etc/azure/azure.conf
+  - name: Fix firewall rule
+    shell: iptables -A OS_FIREWALL_ALLOW -p udp -m state --state NEW -m udp --dport 6081 -j ACCEPT 
   - name: Remove redhat/openshift-ovs-subnet
     lineinfile:
       path: /etc/origin/node/node-config.yaml
