@@ -301,7 +301,7 @@
                      hostSubnetLength: 9
                    externalIPNetworkCIDRs: null
                    hostSubnetLength: 9
-                   ingressIPNetworkCIDR: 172.29.0.0/16
+                   # ingressIPNetworkCIDR: 172.29.0.0/16
                    networkPluginName: cni
                    serviceNetworkCIDR: 172.30.0.0/16
   - name: restart atomic-openshift-master-controllers
