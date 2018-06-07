@@ -354,10 +354,6 @@
         name: ovn-kubernetes-master.service
         state: started
         enabled: yes
-    service:
-        name: ovn-kubernetes-node.service
-        state: started
-        enabled: yes
 - hosts: nodes:!master1
   become: yes
   become_user: root

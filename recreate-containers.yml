@@ -1,0 +1,32 @@
+- hosts: masters
+  gather_facts: no
+  tasks:
+  - name: Pull the right docker pull openshift3/ose-pod
+    shell: docker pull openshift3/ose-pod:v3.9.30
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: delete the docker-registry
+    shell: oc delete dc/docker-registry
+    ignore_errors: yes
+  - name: delete the router
+    shell: oc delete dc/router
+    ignore_errors: yes
+  - name: delete svc/router
+    shell: oc delete svc/router
+    ignore_errors: yes
+  - name: delete svc/docker-registry
+    shell: oc delete svc/docker-registry
+    ignore_errors: yes
+  - name: Delete the route for docker registry
+    shell: oc delete routes/docker-registry 
+    ignore_errors: yes
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Recreate the router
+    shell: oc adm policy add-scc-to-user hostnetwork -z router;oc adm router
+  - name: Recreate the registry
+    shell: oc adm registry
+  - name: Recreate the webconsole
+    shell: oc login -u system:admin;oc create namespace openshift-web-console;oc process -f console-template.yaml -p "API_SERVER_CONFIG=$(cat console-config.yaml)" | oc apply -n openshift-web-console -f -
