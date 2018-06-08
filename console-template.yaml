@@ -12,7 +12,8 @@ metadata:
     openshift.io/provider-display-name: Red Hat, Inc.
 parameters:
 - name: IMAGE
-  value: registry.access.redhat.com/openshift3/ose-web-console:latest
+# value: registry.access.redhat.com/openshift3/ose-web-console:latest
+  value: openshift/origin-web-console:latestt
 - name: OPENSHIFT_PULL_POLICY
   value: Always
 - name: NAMESPACE
@@ -24,7 +25,7 @@ parameters:
 - name: NODE_SELECTOR
   value: '{"node-role.kubernetes.io/master": "true"}'
 - name: REPLICA_COUNT
-  value: "3"
+  value: "1"
 objects:
 
 # to create the web console server
