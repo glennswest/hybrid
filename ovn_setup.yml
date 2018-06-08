@@ -2,6 +2,21 @@
   become: yes
   become_user: root
   tasks:
+  - name: Create the ovn scc account
+    shell: oc create serviceaccount ovn
+    ignore_errors: yes
+  - name: Add the cluster role
+    shell: oc adm policy add-cluster-role-to-user cluster-admin -z ovn
+  - name: Add the anyid field
+    shell:  oc adm policy add-scc-to-user anyuid -z ovn
+  - name: Save the token for later usage
+    shell: oc sa get-token ovn
+    register: ovn_key
+  - local_action: copy content={{ ovn_key.stdout }} dest=/root/ovn.token
+- hosts: master1
+  become: yes
+  become_user: root
+  tasks:
   - name: Get the /etc/origin/master/ca.crt
     fetch:
           src: /etc/origin/master/ca.crt
@@ -305,21 +320,15 @@
                    networkPluginName: cni
                    serviceNetworkCIDR: 172.30.0.0/16
   - name: restart atomic-openshift-master-controllers
-    service:
-        name: atomic-openshift-master-controllers
-        state: restarted
+    shell: systemctl restart atomic-openshift-master-controllers
   - name: restart atomic-openshift-master-api
-    service:
-        name: atomic-openshift-master-api
-        state: restarted
+    shell: systemctl restart atomic-openshift-master-api
 - hosts: nodes
   become: yes
   become_user: root
   tasks:
   - name: restart atomic-openshift-node
-    service:
-        name: atomic-openshift-node
-        state: restarted
+    shell: systemctl restart  atomic-openshift-node
 - hosts: node01
   tasks:
   - name: Grab /etc/openvswitch/ovn_k8s.conf
@@ -327,6 +336,35 @@
       src:  /etc/openvswitch/ovn_k8s.conf
       dest: /tmp/ovn_k8s.conf
       flat: yes
+- hosts: nodes:!master1
+  become: yes
+  become_user: root
+  tasks:
+  - name: enable ovn-kubernetes-node.service
+    service:
+        name: ovn-kubernetes-node.service
+        state: started
+        enabled: yes
+  - name: Start ovn-kubernetes-node
+    shell: systemctl start ovn-kubernetes-node
+- hosts: master1
+  become: yes
+  become_user: root
+  tasks:
+  - name: enable ovn-kubernetes-master.service
+    service:
+        name: ovn-kubernetes-master.service
+        state: started
+        enabled: yes
+  - name: enable ovn-kubernetes-node.service
+    service:
+        name: ovn-kubernetes-node.service
+        state: started
+        enabled: yes
+  - name: Start ovn-kubernetes-master
+    shell: systemctl start ovn-kubernetes-master
+  - name: Start ovn-kubernetes-node
+    shell: systemctl start ovn-kubernetes-node
 - hosts: windows
   gather_facts: no
   tasks:
@@ -345,25 +383,3 @@
        src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
        dest: /bin/ovnkube.exe
        force: yes
-- hosts: master1
-  become: yes
-  become_user: root
-  tasks:
-  - name: enable ovn-kubernetes-master.service
-    service:
-        name: ovn-kubernetes-master.service
-        state: started
-        enabled: yes
-    service:
-        name: ovn-kubernetes-node.service
-        state: started
-        enabled: yes
-- hosts: nodes:!master1
-  become: yes
-  become_user: root
-  tasks:
-  - name: enable ovn-kubernetes-node.service
-    service:
-        name: ovn-kubernetes-node.service
-        state: started
-        enabled: yes

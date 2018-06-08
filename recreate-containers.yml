@@ -1,8 +1,3 @@
-- hosts: masters
-  gather_facts: no
-  tasks:
-  - name: Pull the right docker pull openshift3/ose-pod
-    shell: docker pull openshift3/ose-pod:v3.9.30
 - hosts: localhost
   gather_facts: no
   tasks:
@@ -12,15 +7,27 @@
   - name: delete the router
     shell: oc delete dc/router
     ignore_errors: yes
-  - name: delete svc/router
+  - name: delete svc router
     shell: oc delete svc/router
     ignore_errors: yes
-  - name: delete svc/docker-registry
+  - name: delete router service account
+    shell: oc delete sa router
+    ignore_errors: yes
+  - name: delete registry service account
+    shell: oc delete sa registry
+    ignore_errors: yes
+  - name: delete the cluster role for router
+    shell: oc delete clusterrolebindings router-router-role
+    ignore_errors: yes
+  - name: delete the cluster role for registry
+    shell: oc delete clusterrolebindings registry-registry-role
+    ignore_errors: yes
+  - name: delete svc docker-registry
     shell: oc delete svc/docker-registry
     ignore_errors: yes
-  - name: Delete the route for docker registry
-    shell: oc delete routes/docker-registry 
-    ignore_errors: yes
+  - name: Wait for cleanup
+    pause:
+       minutes: 2
 - hosts: localhost
   gather_facts: no
   tasks:
