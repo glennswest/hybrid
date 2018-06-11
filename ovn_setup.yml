@@ -1,3 +1,47 @@
+- hosts: localhost
+  become: yes
+  become_user: root
+  tasks:
+  - name: Install go
+    yum:
+      name: golang
+      enablerepo: rhel-7-server-optional-rpms
+  - name: Install openshift clients
+    yum:
+      name: atomic-openshift-clients
+  - name: Clear previous build if it exists
+    file: path=~/ovn-kubernetes state=absent
+  - name: Clone to ovn-kubernetes repo
+    shell: git clone https://github.com/openvswitch/ovn-kubernetes ~/ovn-kubernetes
+  - name: Create destination directory
+    file: path=/opt/cni/bin state=directory
+  - name: Create the ovn-kubernetes directory
+    file: path=~/ovn-kubernetes state=directory
+  - name: Build The Controller (Linux)
+    shell: cd ~/ovn-kubernetes;cd go-controller;make;make install
+  - name: Build The Controller (Windows)
+    shell: cd ~/ovn-kubernetes;cd go-controller;make clean;make windows
+  - name: Create directory for cni plugins
+    file: path=/tmp/cniplugin state=directory
+  - name: Get cni plugins
+    shell: wget -q https://github.com/containernetworking/plugins/releases/download/v0.7.1/cni-plugins-amd64-v0.7.1.tgz; tar xvzf cni-plugins-amd64-v0.7.1.tgz -C /tmp/cniplugin
+- hosts: master1
+  become: yes
+  become_user: root
+  tasks:
+  - name: Wait for master to come up
+    wait_for: 
+       port: 8443
+       delay: 300 
+       timeout: 900000
+- hosts: localhost
+  become: yes
+  become_user: root
+  tasks:
+  - name: Get server url
+    shell: "oc whoami --show-server"
+    register: api_url
+  - local_action: copy content="{{ api_url.stdout }}" dest=/root/api_host.txt
 - hosts: master1
   become: yes
   become_user: root
@@ -22,34 +66,6 @@
           src: /etc/origin/master/ca.crt
           dest: /root/
           flat: yes
-- hosts: localhost
-  become: yes
-  become_user: root
-  tasks:
-  - name: Get server url
-    shell: "oc whoami --show-server"
-    register: api_url
-  - local_action: copy content="{{ api_url.stdout }}" dest=/root/api_host.txt
-  - name: Install go
-    yum:
-      name: golang
-      enablerepo: rhel-7-server-optional-rpms
-  - name: Clear previous build if it exists
-    file: path=~/ovn-kubernetes state=absent
-  - name: Clone to ovn-kubernetes repo
-    shell: git clone https://github.com/openvswitch/ovn-kubernetes ~/ovn-kubernetes
-  - name: Create destination directory
-    file: path=/opt/cni/bin state=directory
-  - name: Create the ovn-kubernetes directory
-    file: path=~/ovn-kubernetes state=directory
-  - name: Build The Controller (Linux)
-    shell: cd ~/ovn-kubernetes;cd go-controller;make;make install
-  - name: Build The Controller (Windows)
-    shell: cd ~/ovn-kubernetes;cd go-controller;make clean;make windows
-  - name: Create directory for cni plugins
-    file: path=/tmp/cniplugin state=directory
-  - name: Get cni plugins
-    shell: wget -q https://github.com/containernetworking/plugins/releases/download/v0.7.1/cni-plugins-amd64-v0.7.1.tgz; tar xvzf cni-plugins-amd64-v0.7.1.tgz -C /tmp/cniplugin
 - hosts: nodes
   become: yes
   become_user: root
