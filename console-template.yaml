@@ -13,7 +13,7 @@ metadata:
 parameters:
 - name: IMAGE
 # value: registry.access.redhat.com/openshift3/ose-web-console:latest
-  value: openshift/origin-web-console:latestt
+  value: openshift/origin-web-console:latest
 - name: OPENSHIFT_PULL_POLICY
   value: Always
 - name: NAMESPACE
