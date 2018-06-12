@@ -2,10 +2,15 @@
   become: yes
   become_user: root
   tasks:
-  - name: Wait for master to come up
-    wait_for: 
-       port: 8443
-       timeout: 900000
+  - name: Wait for api
+    uri: 
+       url: "http://master1:8443/api"
+       validate_certs: False
+    register: result
+    until: ('status' in result) and (result.status == 200 or result.status == 401)
+    retries: 60000
+    delay: 10
+    changed_when: false
 - hosts: localhost
   become: yes
   become_user: root
@@ -172,6 +177,8 @@
          ovn-kubernetes-node "{{ config_dir }}"
   - name: Clear old config file
     file: path=/etc/openvswitch/ovn_k8s.conf state=absent
+  - name: Create openvswitch /etc directory
+    file: path=/etc/openvswitch state=directory
   - name: Create /etc/openvswitch/ovn_k8s.conf
     blockinfile:
       dest: /etc/openvswitch/ovn_k8s.conf
@@ -304,21 +311,3 @@
     shell: systemctl start ovn-kubernetes-master
   - name: Start ovn-kubernetes-node
     shell: systemctl start ovn-kubernetes-node
-- hosts: windows
-  gather_facts: no
-  tasks:
-  - name: Copy ovn_k8s.conf to windows nodes
-    win_copy:
-       src: /tmp/ovn_k8s.conf
-       dest: C:\Program Files\Cloudbase Solutions\Open vSwitch\conf\ovn_k8s.conf
-       force: yes
-  - name: copy ovn-k8s-cni-overlay.exe
-    win_copy:
-       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
-       dest: /bin/ovn-k8s-cni-overlay.exe
-       force: yes
-  - name: copy ovn ovnkube.exe
-    win_copy:
-       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
-       dest: /bin/ovnkube.exe
-       force: yes
