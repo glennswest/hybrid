@@ -273,6 +273,16 @@
   become: yes
   become_user: root
   tasks:
+  - name: add --disable proxy to sysconfig/atomic-openshift-node file
+    lineinfile:
+       path: /etc/systemd/system/atomic-openshift-node.service
+       regexp: '^ExecStart='
+       line: 'ExecStart=/usr/bin/openshift start node --disable proxy --config=${CONFIG_FILE} $OPTIONS'
+       backup: yes
+  - name: Reload the atomic-openshift-node service file
+    shell: systemctl daemon-reload
+  - name: Clear old rules
+    shell: iptables -t nat -F
   - name: restart atomic-openshift-node
     shell: systemctl restart  atomic-openshift-node
 - hosts: node01
