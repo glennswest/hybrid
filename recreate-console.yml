@@ -1,0 +1,42 @@
+- hosts: localhost
+  become: yes
+  become_user: root
+  vars:
+     user: "{{lookup('env','USER')}}"
+  tasks:
+  - name: Get server url
+    shell: "oc whoami --show-server"
+    register: api_url
+  - local_action: copy content="{{ api_url.stdout }}" dest=/tmp/api_host.txt
+- hosts: localhost
+  become: yes
+  become_user: root
+  vars:
+     user: "{{lookup('env','USER')}}"
+     config_dir: "/etc/origin/master"
+     apihost: "{{ lookup('file', '/tmp/api_host.txt') }}"
+  tasks:
+  - name: fix PublicConsoleUrl
+    lineinfile:
+       path: /home/{{user}}/hybrid/console-config.yaml
+       regexp: '^  consolePublicURL:'
+       line: '  consolePublicURL: {{apihost}}/console/'
+       backup: yes
+  - name: fix MasterPublicURL
+    lineinfile:
+       path: /home/{{user}}/hybrid/console-config.yaml
+       regexp: '^  masterPublicURL:'
+       line: '  masterPublicURL: {{apihost}}'
+       backup: yes
+  - name: Login to Openshift
+    shell: oc login -u system:admin
+  - name: Delete Existing openshift-web-console
+    shell: oc delete project openshift-web-console
+  - name: Wait for delete to finish
+    pause:
+      minutes: 3
+  - name: Create New Project and Make sure the selector is empty
+    shell: oc adm new-project openshift-web-console --node-selector=''
+  - name: Create the New OpenShift Web Console
+    shell: oc process -f console-template.yaml -p "API_SERVER_CONFIG=$(cat console-config.yaml)" | oc apply -n openshift-web-console -f -
+
