@@ -18,7 +18,7 @@
   - name: Get server url
     shell: "oc whoami --show-server"
     register: api_url
-  - local_action: copy content="{{ api_url.stdout }}" dest=/root/api_host.txt
+  - local_action: copy content="{{ api_url.stdout }}" dest="{{playbook_dir}}/api_host.txt"
 - hosts: master1
   become: yes
   become_user: root
@@ -33,7 +33,7 @@
   - name: Save the token for later usage
     shell: oc sa get-token ovn
     register: ovn_key
-  - local_action: copy content={{ ovn_key.stdout }} dest=/root/ovn.token
+  - local_action: copy content={{ ovn_key.stdout }} dest="{{playbook_dir}}/ovn.token"
 - hosts: master1
   become: yes
   become_user: root
@@ -41,7 +41,7 @@
   - name: Get the /etc/origin/master/ca.crt
     fetch:
           src: /etc/origin/master/ca.crt
-          dest: /root/
+          dest: "{{playbook_dir}}/"
           flat: yes
 - hosts: nodes
   become: yes
@@ -51,7 +51,7 @@
     file: path=/etc/origin/master state=directory
   - name: Place Crt 
     copy:
-       src: /root/ca.crt
+       src: "{{playbook_dir}}/ca.crt"
        dest: /etc/origin/master
        mode: u+rw
   - name: Remove old network setup
@@ -71,12 +71,12 @@
   vars:
      user: "{{lookup('env','USER')}}"
      config_dir: "/etc/origin/master"
-     apihost: "{{ lookup('file', '/root/api_host.txt') }}"
+     apihost: "{{ lookup('file', '{{playbook_dir}}/api_host.txt') }}"
   tasks:
   - debug: msg="User is {{ user }}"
   - name: Copy token to all masters
     copy: 
-       src: /root/ovn.token
+       src: "{{playbook_dir}}/ovn.token"
        dest: "{{ config_dir }}/ovn.token"
   - name: Create systemd file for ovn-kubernetes node
     blockinfile:
@@ -129,7 +129,7 @@
 
             local master_config="${config_dir}/master-config.yaml"
             cluster_cidr="10.128.0.0/14"
-            apiserver="{{lookup('file', '/root/api_host.txt')}}" 
+            apiserver="{{lookup('file', '{{playbook_dir}}/api_host.txt')}}" 
 
             echo "Enabling and start ovn-kubernetes master services"
             /usr/bin/ovnkube \
@@ -159,7 +159,7 @@
             local config_dir=$1
             token=$(cat ${config_dir}/ovn.token)
 
-            apiserver="{{lookup('file', '/root/api_host.txt')}}" 
+            apiserver="{{lookup('file', '{{playbook_dir}}/api_host.txt')}}" 
             cluster_cidr="10.128.0.0/14"
 
             echo "Enabling and start ovn-kubernetes node services"
@@ -189,8 +189,8 @@
          #logfile=/var/log/ovnkube.log
          #https://gswmon.southcentralus.cloudapp.azure.com:8443
          [kubernetes]
-         apiserver="{{lookup('file', '/root/api_host.txt')}}"  # kubernetes api server, or the load balanced address for the multiple api server case
-         token="{{lookup('file', '/root/ovn.token')}}"
+         apiserver="{{lookup('file', '{{playbook_dir}}/api_host.txt')}}"  # kubernetes api server, or the load balanced address for the multiple api server case
+         token="{{lookup('file', '{{playbook_dir}}/ovn.token')}}"
          cacert=/etc/origin/master/ca.crt
 
          [ovnnorth]
