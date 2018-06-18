@@ -321,6 +321,9 @@
     shell: systemctl start ovn-kubernetes-master
   - name: Start ovn-kubernetes-node
     shell: systemctl start ovn-kubernetes-node
+  - name: Let the network setup and become stable
+    pause:
+       minutes: 2
 - hosts: localhost
   become: yes
   become_user: root
@@ -382,13 +385,13 @@
   tasks:
   - name: fix PublicConsoleUrl
     lineinfile:
-       path: /home/{{user}}/hybrid/console-config.yaml
+       path: "{{playbook_dir}}/console-config.yaml"
        regexp: '^  consolePublicURL:'
        line: '  consolePublicURL: {{apihost}}/console/'
        backup: yes
   - name: fix MasterPublicURL
     lineinfile:
-       path: /home/{{user}}/hybrid/console-config.yaml
+       path: "{{playbook_dir}}/console-config.yaml"
        regexp: '^  masterPublicURL:'
        line: '  masterPublicURL: {{apihost}}'
        backup: yes
