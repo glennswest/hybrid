@@ -341,6 +341,9 @@
   - name: delete the docker-registry
     shell: oc delete dc/docker-registry
     ignore_errors: yes
+  - name: delete the po/docker-registry-1-deploy 
+    shell: oc delete po/docker-registry-1-deploy 
+    ignore_errors: yes
   - name: delete the router
     shell: oc delete dc/router
     ignore_errors: yes
