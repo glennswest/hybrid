@@ -1,3 +1,13 @@
+- hosts: masters
+  gather_facts: no
+  tasks:
+  - name: Restart atomic-openshift-master-controllers.service
+    shell: systemctl restart atomic-openshift-master-controllers.service
+  - name: Restart atomic-openshift-master-api.service
+    shell: systemctl restart atomic-openshift-master-api.service
+  - name: Wait for clean restart
+    pause:
+       minutes: 1
 - hosts: windows
   gather_facts: no
   vars:
@@ -101,6 +111,10 @@
   vars:
      user: "{{lookup('env','USER')}}"
   tasks:
+  - name: Remove Old Bin if it exists
+    win_file:
+       path: c:\bin
+       state: absent
   - name: Create Bin Directory
     win_file:
        path: c:\bin
@@ -185,3 +199,8 @@
     win_shell: docker build . -t kubeletwin/pause
     args:
       chdir: c:\k\hybrid
+  - name: Install HyperV RSAT Tools
+    win_shell: Install-WindowsFeature -Name RSAT-Hyper-V-Tools
+  - name: Install HyperV Features
+    win_shell: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+    
