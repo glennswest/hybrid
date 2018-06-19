@@ -1,5 +1,5 @@
 $powershell = (Get-Command powershell).Source
-$scriptPath = 'C:\k\hybrid\bin\start_kubeovn.ps1'
+$scriptPath = 'C:\k\hybrid\bin\start_kubelet.ps1'
 $arguments = '-ExecutionPolicy Bypass -NoProfile -File "{0}"' -f $scriptPath
 $serviceName = "kubelet"
 nssm install $serviceName $powershell $arguments

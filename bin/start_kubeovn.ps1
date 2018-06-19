@@ -1,10 +1,2 @@
-c:\bin\kubelet.exe --hostname-override=$(hostname) --v=6 `
-    --resolv-conf="" `
-    --allow-privileged=true --enable-debugging-handlers `
-    --cluster-dns=10.0.1.6 --cluster-domain=cluster.local `
-    --kubeconfig=c:\k\config --hairpin-mode=promiscuous-bridge `
-    --image-pull-progress-deadline=20m --cgroups-per-qos=false `
-    --enforce-node-allocatable="" --pod-infra-container-image=glennswest/pause:latest `
-    --network-plugin=cni --cni-bin-dir="c:\k\hybrid\bin" --cni-conf-dir "c:\etc\cni\net.d"
-
+C:\bin\ovnkube.exe -init-node  $env:computername  -cluster-subnet 10.128.0.0/14 -cni-conf-dir="C:\cni" -service-cluster-ip-range 172.30.0.0/16
 
