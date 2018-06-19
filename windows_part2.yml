@@ -22,7 +22,7 @@
        force: yes
   - name: copy ovn ovnkube.exe
     win_copy:
-       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
+       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovnkube.exe
        dest: /bin/ovnkube.exe
        force: yes
 - hosts: winnode01
