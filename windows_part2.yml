@@ -7,6 +7,16 @@
           src: /etc/openvswitch/ovn_k8s.conf 
           dest: "{{playbook_dir}}/"
           flat: yes
+- hosts: localhost
+  become: yes
+  become_user: root
+  tasks:
+  - name: Fix ovn_k8s.conf for Windows Nodes
+    lineinfile:
+          path: "{{playbook_dir}}/ovn_k8s.conf"
+          regexp: '^cacert='
+          line: 'cacert=/k/ca.crt'
+          backup: yes
 - hosts: windows
   gather_facts: no
   tasks:
