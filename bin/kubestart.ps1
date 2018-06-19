@@ -5,6 +5,7 @@ c:\bin\kubelet.exe --hostname-override=$(hostname) --v=6 `
     --kubeconfig=c:\k\config --hairpin-mode=promiscuous-bridge `
     --image-pull-progress-deadline=20m --cgroups-per-qos=false `
     --enforce-node-allocatable="" --pod-infra-container-image=glennswest/pause:latest `
-    --network-plugin=cni --cni-bin-dir="c:\k\hybrid\bin" --cni-conf-dir "C:\k\hybrid\cni\config"
+    --network-plugin=cni --cni-bin-dir="c:\k\hybrid\bin" --cni-conf-dir "C:\k\hybrid\cni\config" `
+    --tls-cert-file="C:\k\server.crt" --tls-private-key-file="C:\k\server.key"
 
 
