@@ -3,12 +3,12 @@ $scriptPath = 'C:\k\hybrid\bin\start_kubeovn.ps1'
 $arguments = '-ExecutionPolicy Bypass -NoProfile -File "{0}"' -f $scriptPath
 $serviceName = "kubeovn"
 nssm install $serviceName $powershell $arguments
-nssm set kubelet DisplayName Kubeovn
-nssm set kubelet Description OVN For OpenShift
-nssm set kubelet Start SERVICE_AUTO_START
-nssm set kubelet AppStdout C:\k\hybrid\logs\kubeovn.log
-nssm set kubelet AppStderr C:\k\hybrid\logs\kubeovn.log
-nssm set kubelet AppRotateFiles 1
-nssm set kubelet AppRotateOnline 1
-nssm set kubelet AppRotateSeconds 86400
-nssm set kubelet AppRotateBytes 1048576
+nssm set kubeovn DisplayName Kubeovn
+nssm set kubeovn Description OVN For OpenShift
+nssm set kubeovn Start SERVICE_AUTO_START
+nssm set kubeovn AppStdout C:\k\hybrid\logs\kubeovn.log
+nssm set kubeovn AppStderr C:\k\hybrid\logs\kubeovn.log
+nssm set kubeovn AppRotateFiles 1
+nssm set kubeovn AppRotateOnline 1
+nssm set kubeovn AppRotateSeconds 86400
+nssm set kubeovn AppRotateBytes 1048576
