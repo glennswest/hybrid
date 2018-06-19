@@ -1,0 +1,34 @@
+- hosts: master1
+  become: yes
+  become_user: root
+  tasks:
+  - name: Get the ovn_k8s.conf
+    fetch:
+          src: /etc/openvswitch/ovn_k8s.conf 
+          dest: "{{playbook_dir}}/"
+          flat: yes
+- hosts: windows
+  gather_facts: no
+  tasks:
+  - name: Copy ovn_k8s.conf to windows nodes
+    win_copy:
+       src: "{{playbook_dir}}/ovn_k8s.conf"
+       dest: C:\Program Files\Cloudbase Solutions\Open vSwitch\conf\ovn_k8s.conf
+       force: yes
+  - name: copy ovn-k8s-cni-overlay.exe
+    win_copy:
+       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
+       dest: /bin/ovn-k8s-cni-overlay.exe
+       force: yes
+  - name: copy ovn ovnkube.exe
+    win_copy:
+       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
+       dest: /bin/ovnkube.exe
+       force: yes
+- hosts: winnode01
+  gather_facts: no
+  tasks:
+  - name: Add port 10250 to windows firewall rules
+    win_shell: New-NetFirewallRule -Name kubelet -DisplayName 'Kubernetes Node' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 10250
+
+
