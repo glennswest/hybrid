@@ -30,5 +30,7 @@
   tasks:
   - name: Add port 10250 to windows firewall rules
     win_shell: New-NetFirewallRule -Name kubelet -DisplayName 'Kubernetes Node' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 10250
-
+    ignore_errors: yes
+  - name: Install NSSM
+    win_shell: choco install nssm -y
 
