@@ -7,22 +7,39 @@
           src: /etc/openvswitch/ovn_k8s.conf 
           dest: "{{playbook_dir}}/"
           flat: yes
-- hosts: localhost
-  become: yes
-  become_user: root
-  tasks:
-  - name: Fix ovn_k8s.conf for Windows Nodes
-    lineinfile:
-          path: "{{playbook_dir}}/ovn_k8s.conf"
-          regexp: '^cacert='
-          line: 'cacert=/k/ca.crt'
-          backup: yes
+- hosts: windows
+  tasks: 
+  - name: Create the master directory
+    file: path="{{playbook_dir}}/{{ ansible_hostname }}" state=directory
+    delegate_to: localhost
+  - name: Create ovn_k8s.conf
+    blockinfile:
+      dest: "{{playbook_dir}}/{{ ansible_hostname }}/ovn_k8s.conf"
+      create: yes
+      block: |
+         [default]
+         ovn_encap-ip=lookup('dig',"{{ ansible_hostname }}")
+
+         [kubernetes]
+         apiserver="{{lookup('file', '{{playbook_dir}}/api_host.txt')}}"  # kubernetes api server, or the load balanced address for the multiple api server case
+         token="{{lookup('file', '{{playbook_dir}}/ovn.token')}}"
+         cacert=/k/ca.crt
+
+         [ovnnorth]
+         address="tcp://{{lookup('dig','master1')}}:6641" # this master machine's IP address
+
+         [ovnsouth]
+         address="tcp://{{lookup('dig','master1')}}:6642"
+
+      delegate_to: localhost
+- hosts: nodes
+    l
 - hosts: windows
   gather_facts: no
   tasks:
   - name: Copy ovn_k8s.conf to windows nodes
     win_copy:
-       src: "{{playbook_dir}}/ovn_k8s.conf"
+       src: "{{playbook_dir}}/{{ansible-hostname}}/ovn_k8s.conf"
        dest: C:\Program Files\Cloudbase Solutions\Open vSwitch\conf\ovn_k8s.conf
        force: yes
   - name: copy ovn-k8s-cni-overlay.exe
@@ -35,12 +52,14 @@
        src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovnkube.exe
        dest: /bin/ovnkube.exe
        force: yes
-- hosts: winnode01
+- hosts: windows
   gather_facts: no
   tasks:
   - name: Add port 10250 to windows firewall rules
     win_shell: New-NetFirewallRule -Name kubelet -DisplayName 'Kubernetes Node' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 10250
     ignore_errors: yes
+  - name: Add port 6081 to windows firewall rules
+    win_shell: New-NetFirewallRule -Name ovn.6081 -DisplayName 'ovn.6081' -Enabled True -Direction Inbound -Protocol UDP -Action Allow -LocalPort 6081
   - name: Install NSSM
     win_shell: choco install nssm -y
 

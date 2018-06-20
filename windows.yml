@@ -46,10 +46,10 @@
   - name: Create the ovn scc account
     shell: oc create serviceaccount ovn
     ignore_errors: yes
+  - name: add scc privileged for ovn
+    win_shell: oc adm policy add-scc-to-user privileged -z ovn
   - name: Add the cluster role
     shell: oc adm policy add-cluster-role-to-user cluster-admin -z ovn
-  - name: Add the anyid field
-    shell:  oc adm policy add-scc-to-user anyuid -z ovn
   - name: Save the token for later usage
     shell: oc sa get-token ovn
     register: ovn_key
@@ -133,8 +133,6 @@
     win_shell: choco install git -y
   - name: Install wget
     win_shell: choco install wget -y
-  - name: Install Hyber-V
-    win_shell: Install-WindowsFeature -Name RSAT-Hyper-V-Tools
   - name: Enable Hyper-V
     win_shell: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
   - name: Pull openvswitch
@@ -142,12 +140,16 @@
   - name: Install open vswitch
     win_shell: cmd /c 'msiexec /i openvswitch.msi ADDLOCAL="OpenvSwitchCLI,OpenvSwitchDriver,OVNHost" /qn'
     ignore_errors: yes
+  - name: Set up the GUID for openvswitch
+    win_shell: $GUID = (New-Guid).Guid;ovs-vsctl set Open_vSwitch . external_ids:system-id="$($GUID)"
+  - name: Turn off Advfireall profiles
+    win_shell: NetSh Advfirewall set allprofiles state off
   - name: Start ovs service
     win_shell: Start-Service ovs-vswitchd
   - name: Set up path for ovn
     win_shell: setx PATH "C:\Program Files\Cloudbase Solutions\Open vSwitch\bin;$env:path" -m
   - name: Pull the kubernetes client
-    win_shell: wget.exe --no-check-certificate https://dl.k8s.io/v1.9.3/kubernetes-node-windows-amd64.tar.gz -O C:\Windows\Temp\kubernetes.tar.gz  
+    win_shell: wget.exe --no-check-certificate https://dl.k8s.io/v1.9.8/kubernetes-node-windows-amd64.tar.gz -O C:\Windows\Temp\kubernetes.tar.gz  
   - name: Unzip kubernetes
     win_shell: 7z x -aoa C:\Windows\Temp\kubernetes.tar.gz -o\Windows\Temp
   - name: Untar kubernetes
@@ -199,8 +201,4 @@
     win_shell: docker build . -t kubeletwin/pause
     args:
       chdir: c:\k\hybrid
-  - name: Install HyperV RSAT Tools
-    win_shell: Install-WindowsFeature -Name RSAT-Hyper-V-Tools
-  - name: Install HyperV Features
-    win_shell: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
     
