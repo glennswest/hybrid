@@ -150,8 +150,17 @@
     win_shell: "$GUID = (New-Guid).Guid; Write-Output $GUID"
     register: guid
   - debug: msg="GUID is {{ guid.stdout }}"
-  - name: Set the systemid
-    win_shell: ovs-vsctl set Open_vSwitch . external_ids:system-id="{{guid.stdout}}"
+  - name: create a schedule task
+    win_scheduled_task:
+      name: ovnsetguid
+      description: Set OVN System Guid
+      executable: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+      arguments: -ExecutionPolicy Unrestricted -NonInteractive ovs-vsctl set Open_vSwitch . external_ids:system-id="{{ guid.stdout | trim  }}"
+      frequency: once
+      enabled:   true
+      time:      "14:00:00"
+  - name: Run the schedule task
+    win_shell: Start-ScheduledTask -TaskName ovnsetguid
   - name: Pull the kubernetes client
     win_shell: wget.exe --no-check-certificate https://dl.k8s.io/v1.9.8/kubernetes-node-windows-amd64.tar.gz -O C:\Windows\Temp\kubernetes.tar.gz  
   - name: Unzip kubernetes
