@@ -1,10 +1,10 @@
 apiVersion: webconsole.config.openshift.io/v1
 kind: WebConsoleConfiguration
 clusterInfo:
-  consolePublicURL: https://ygswmon.eastus2.cloudapp.azure.com:8443/console/
+  consolePublicURL: https://gwmon.eastus2.cloudapp.azure.com:8443/console/
   loggingPublicURL: ""
   logoutPublicURL: ""
-  masterPublicURL: https://ygswmon.eastus2.cloudapp.azure.com:8443
+  masterPublicURL: https://gwmon.eastus2.cloudapp.azure.com:8443
   metricsPublicURL: ""
 extensions:
   scriptURLs: []

@@ -299,7 +299,6 @@
   - name: enable ovn-kubernetes-node.service
     service:
         name: ovn-kubernetes-node.service
-        state: started
         enabled: yes
   - name: Start ovn-kubernetes-node
     shell: systemctl start ovn-kubernetes-node
@@ -319,6 +318,9 @@
         enabled: yes
   - name: Start ovn-kubernetes-master
     shell: systemctl start ovn-kubernetes-master
+  - name: pause so ovn-kube master can start up
+    pause:
+       minutes: 1
   - name: Start ovn-kubernetes-node
     shell: systemctl start ovn-kubernetes-node
   - name: Let the network setup and become stable
@@ -367,7 +369,14 @@
     ignore_errors: yes
   - name: Wait for cleanup
     pause:
-       minutes: 2
+       minutes: 4
+# Sometimes after delete we loose a ovn-kube process
+- hosts: nodes
+  become: yes
+  become_user: root
+  tasks:
+  - name: Start ovn-kubernetes-node
+    shell: systemctl start ovn-kubernetes-node
 - hosts: localhost
   gather_facts: no
   tasks:

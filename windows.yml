@@ -7,7 +7,7 @@
     shell: systemctl restart atomic-openshift-master-api.service
   - name: Wait for clean restart
     pause:
-       minutes: 1
+       minutes: 2
 - hosts: windows
   gather_facts: no
   vars:
@@ -47,7 +47,7 @@
     shell: oc create serviceaccount ovn
     ignore_errors: yes
   - name: add scc privileged for ovn
-    win_shell: oc adm policy add-scc-to-user privileged -z ovn
+    shell: oc adm policy add-scc-to-user privileged -z ovn
   - name: Add the cluster role
     shell: oc adm policy add-cluster-role-to-user cluster-admin -z ovn
   - name: Save the token for later usage
@@ -140,14 +140,18 @@
   - name: Install open vswitch
     win_shell: cmd /c 'msiexec /i openvswitch.msi ADDLOCAL="OpenvSwitchCLI,OpenvSwitchDriver,OVNHost" /qn'
     ignore_errors: yes
-  - name: Set up the GUID for openvswitch
-    win_shell: $GUID = (New-Guid).Guid;ovs-vsctl set Open_vSwitch . external_ids:system-id="$($GUID)"
   - name: Turn off Advfireall profiles
     win_shell: NetSh Advfirewall set allprofiles state off
   - name: Start ovs service
     win_shell: Start-Service ovs-vswitchd
   - name: Set up path for ovn
     win_shell: setx PATH "C:\Program Files\Cloudbase Solutions\Open vSwitch\bin;$env:path" -m
+  - name: Set up the GUID for openvswitch
+    win_shell: "$GUID = (New-Guid).Guid; Write-Output $GUID"
+    register: guid
+  - debug: msg="GUID is {{ guid.stdout }}"
+  - name: Set the systemid
+    win_shell: ovs-vsctl set Open_vSwitch . external_ids:system-id="{{guid.stdout}}"
   - name: Pull the kubernetes client
     win_shell: wget.exe --no-check-certificate https://dl.k8s.io/v1.9.8/kubernetes-node-windows-amd64.tar.gz -O C:\Windows\Temp\kubernetes.tar.gz  
   - name: Unzip kubernetes
