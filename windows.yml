@@ -169,14 +169,12 @@
     win_shell: 7z x -aoa c:\Windows\Temp\kubernetes.tar -o\Windows\Temp
   - name: Move the kube to bin
     win_shell: copy "C:\Windows\Temp\kubernetes\node\bin\*" C:\bin
-  - name: Cleanup any old config
-    win_file:
-       path: c:\k
-       state: absent
   - name: Mkdir \k
     win_file:
        path: C:\k
        state: directory
+       ignore_errors: yes
+       
   - name: move the node files
     win_copy:
       src: /etc/origin/generated-configs/{{inventory_hostname}}.tgz
@@ -210,6 +208,7 @@
     win_shell: "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All"
   - name: Pull down hybrid directoy
     win_shell: git clone https://github.com/glennswest/hybrid.git c:\k\hybrid
+    ignore_errors: yes
   - name: Build the pause windows container
     win_shell: docker build . -t kubeletwin/pause
     args:
