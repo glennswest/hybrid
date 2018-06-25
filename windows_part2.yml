@@ -35,6 +35,23 @@
 - hosts: windows
   gather_facts: no
   tasks:
+  - name: Mkdir \cni
+    win_file:
+       path: C:\cni
+       state: directory
+       ignore_errors: yes
+  - name: Create 10-ovn-kubernetes.conf
+    win_copy:
+       dest: c:\cni\10-ovn-kubernetes.conf
+       force: yes
+       content: |
+        {"cniVersion":"0.3.1","name":"ovn-kubernetes","type":"ovn-k8s-cni-overlay","ipam":{},"dns":{}}
+
+  - name: Copy ovn_k8s.conf to cni directory
+    win_copy:
+       src: "{{playbook_dir}}/{{ansible_hostname}}/ovn_k8s.conf"
+       dest: C:\cni\ovn_k8s.conf
+       force: yes
   - name: Copy ovn_k8s.conf to windows nodes
     win_copy:
        src: "{{playbook_dir}}/{{ansible_hostname}}/ovn_k8s.conf"
