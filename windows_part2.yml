@@ -18,7 +18,7 @@
       create: yes
       block: |
          [default]
-         #ovn_encap-ip="{{lookup('dig',"{{ ansible_hostname }}")}}"
+         encap-ip="{{lookup('dig',"{{ ansible_hostname }}")}}"
 
          [kubernetes]
          apiserver="{{lookup('file', '{{playbook_dir}}/api_host.txt')}}"  # kubernetes api server, or the load balanced address for the multiple api server case
