@@ -111,41 +111,6 @@
   vars:
      user: "{{lookup('env','USER')}}"
   tasks:
-  - name: Remove Old Bin if it exists
-    win_file:
-       path: c:\bin
-       state: absent
-  - name: Create Bin Directory
-    win_file:
-       path: c:\bin
-       state: directory
-  - name: Set Bin Path
-    win_shell: setx ChocolateyBinRoot "C:\bin" -m 
-  - name: Set Path
-    win_shell: setx PATH "C:\ProgramData\chocolatey\bin;$env:path;c:\bin;c:\k\hybrid\bin" -m 
-  - name: Install Package Manager
-    win_shell: Set-ExecutionPolicy Bypass -Scope Process -Force; iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
-  - name: Install 7zip
-    win_shell: choco install 7zip.portable -y
-  - name: Install Vim
-    win_shell: choco install vim -y
-  - name: Install git
-    win_shell: choco install git -y
-  - name: Install wget
-    win_shell: choco install wget -y
-  - name: Enable Hyper-V
-    win_shell: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
-  - name: Pull openvswitch
-    win_shell: wget.exe https://cloudbase.it/downloads/openvswitch-hyperv-2.7.0-certified.msi -O openvswitch.msi
-  - name: Install open vswitch
-    win_shell: cmd /c 'msiexec /i openvswitch.msi ADDLOCAL="OpenvSwitchCLI,OpenvSwitchDriver,OVNHost" /qn'
-    ignore_errors: yes
-  - name: Turn off Advfireall profiles
-    win_shell: NetSh Advfirewall set allprofiles state off
-  - name: Start ovs service
-    win_shell: Start-Service ovs-vswitchd
-  - name: Set up path for ovn
-    win_shell: setx PATH "C:\Program Files\Cloudbase Solutions\Open vSwitch\bin;$env:path" -m
   - name: Set up the GUID for openvswitch
     win_shell: "$GUID = (New-Guid).Guid; Write-Output $GUID"
     register: guid
