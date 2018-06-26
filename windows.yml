@@ -18,7 +18,7 @@
     args:
        chdir: /etc/origin
     delegate_to: master1
-  - name: Create Config 
+  - name: Create Config
     shell: oc adm create-node-config --hostnames={{inventory_hostname}} --node={{inventory_hostname}} --node-dir=/etc/origin/generated-configs/{{inventory_hostname}}
     args:
         chdir: /etc/origin/
@@ -33,12 +33,12 @@
   become_user: root
   tasks:
   - name: Create a archive of the node configs
-    archive: 
+    archive:
        path: /etc/origin/generated-configs/*
-       dest:  /etc/origin/generated-configs.tgz 
+       dest:  /etc/origin/generated-configs.tgz
        mode:  666
   - name: Move the configs to bastion
-    fetch: 
+    fetch:
        src:  /etc/origin/generated-configs.tgz
        dest:  /tmp/
        flat: yes
@@ -65,7 +65,7 @@
   - name: Enable Pip
     shell: yum-config-manager --enable epel
   - name: Install PIP and Related
-    shell: yum install -y python-pip 
+    shell: yum install -y python-pip
   - name: disable epel
     shell: yum-config-manager --disable epel
   - name: Install PIP and Related
@@ -75,7 +75,7 @@
   - name: Install pywinrm keberos
     shell: pip install pywinrm[kerberos]
   - name: Setup local origin structure
-    file: 
+    file:
           path: /etc/origin/generated-configs
           state: directory
   - name: Extract configs
@@ -88,21 +88,21 @@
       owner: "{{user}}"
       recurse: yes
   - name: Create windows directory for master1node files
-    file: 
+    file:
          path: /etc/origin/generated-configs/node-master1/windows
          state: directory
   - name: Fix system-node kubconfig
-    copy: 
-       src: /etc/origin/generated-configs/node-master1/system:node:master1.kubeconfig 
+    copy:
+       src: /etc/origin/generated-configs/node-master1/system:node:master1.kubeconfig
        dest: /etc/origin/generated-configs/node-master1/windows/system-node-master1.kubeconfig
        force: yes
   - name: Fix system-node crt
-    copy: 
+    copy:
        src: /etc/origin/generated-configs/node-master1/system:node:master1.crt
        dest: /etc/origin/generated-configs/node-master1/windows/system-node-master1.crt
        force: yes
   - name: Fix system-node key
-    copy: 
+    copy:
        src: /etc/origin/generated-configs/node-master1/system:node:master1.key
        dest: /etc/origin/generated-configs/node-master1/windows/system-node-master1.key
        force: yes
@@ -127,7 +127,7 @@
   - name: Run the schedule task
     win_shell: Start-ScheduledTask -TaskName ovnsetguid
   - name: Pull the kubernetes client
-    win_shell: wget.exe --no-check-certificate https://dl.k8s.io/v1.9.8/kubernetes-node-windows-amd64.tar.gz -O C:\Windows\Temp\kubernetes.tar.gz  
+    win_shell: wget.exe --no-check-certificate https://dl.k8s.io/v1.9.8/kubernetes-node-windows-amd64.tar.gz -O C:\Windows\Temp\kubernetes.tar.gz
   - name: Unzip kubernetes
     win_shell: 7z x -aoa C:\Windows\Temp\kubernetes.tar.gz -o\Windows\Temp
   - name: Untar kubernetes
@@ -139,7 +139,7 @@
        path: C:\k
        state: directory
        ignore_errors: yes
-       
+
   - name: move the node files
     win_copy:
       src: /etc/origin/generated-configs/{{inventory_hostname}}.tgz
@@ -159,7 +159,7 @@
        path: c:\k\etc
        state: absent
   - name: Setup client config
-    win_copy: 
+    win_copy:
        src: "/root/.kube/config"
        dest: /k/config
        force: yes
@@ -178,4 +178,144 @@
     win_shell: docker build . -t kubeletwin/pause
     args:
       chdir: c:\k\hybrid
-    
+# Network setup
+- hosts: windows
+  gather_facts: no
+  tasks:
+  - name: Expand System Disk
+    win_shell: expanddisk.ps1
+    args:
+      chdir: c:\k\hybrid\bin
+  - name: Setup Docker network
+    win_shell: docker-create.ps1
+    args:
+      chdir: c:\k\hybrid\bin
+  - name: Setup SDN
+    win_shell: setup-network.ps1
+    args:
+      chdir: c:\k\hybrid\bin
+  - name: Pause for sdn setup
+    pause:
+       minutes: 2    
+# Part 2
+- hosts: master1
+  become: yes
+  become_user: root
+  tasks:
+  - name: Get the ovn_k8s.conf
+    fetch:
+          src: /etc/openvswitch/ovn_k8s.conf
+          dest: "{{playbook_dir}}/"
+          flat: yes
+- hosts: windows
+  tasks:
+  - name: Create the master directory
+    file: path="{{playbook_dir}}/{{ ansible_hostname }}" state=directory
+    delegate_to: localhost
+  - name: Create ovn_k8s.conf
+    blockinfile:
+      dest: "{{playbook_dir}}/{{ ansible_hostname }}/ovn_k8s.conf"
+      create: yes
+      block: |
+         [default]
+         encap-ip="{{lookup('dig',"{{ ansible_hostname }}")}}"
+
+         [kubernetes]
+         apiserver="{{lookup('file', '{{playbook_dir}}/api_host.txt')}}"  # kubernetes api server, or the load balanced address for the multiple api server case
+         token="{{lookup('file', '{{playbook_dir}}/ovn.token')}}"
+         cacert=/k/ca.crt
+
+         [ovnnorth]
+         address="tcp://{{lookup('dig','master1')}}:6641" # this master machine's IP address
+
+         [ovnsouth]
+         address="tcp://{{lookup('dig','master1')}}:6642"
+
+    delegate_to: localhost
+- hosts: windows
+  gather_facts: no
+  tasks:
+  - name: Mkdir \cni
+    win_file:
+       path: C:\cni
+       state: directory
+       ignore_errors: yes
+  - name: Create 10-ovn-kubernetes.conf
+    win_copy:
+       dest: c:\cni\10-ovn-kubernetes.conf
+       force: yes
+       content: |
+        {"cniVersion":"0.3.1","name":"ovn-kubernetes","type":"ovn-k8s-cni-overlay","ipam":{},"dns":{}}
+
+  - name: Copy ovn_k8s.conf to cni directory
+    win_copy:
+       src: "{{playbook_dir}}/{{ansible_hostname}}/ovn_k8s.conf"
+       dest: C:\cni\ovn_k8s.conf
+       force: yes
+  - name: Copy ovn_k8s.conf to windows nodes
+    win_copy:
+       src: "{{playbook_dir}}/{{ansible_hostname}}/ovn_k8s.conf"
+       dest: C:\Program Files\Cloudbase Solutions\Open vSwitch\conf\ovn_k8s.conf
+       force: yes
+  - name: copy ovn-k8s-cni-overlay.exe
+    win_copy:
+       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovn-k8s-cni-overlay.exe
+       dest: /bin/ovn-k8s-cni-overlay.exe
+       force: yes
+  - name: copy ovn ovnkube.exe
+    win_copy:
+       src: /root/ovn-kubernetes/go-controller/_output/go/windows/ovnkube.exe
+       dest: /bin/ovnkube.exe
+       force: yes
+- hosts: windows
+  gather_facts: no
+  tasks:
+  - name: Add port 10250 to windows firewall rules
+    win_shell: New-NetFirewallRule -Name kubelet -DisplayName 'Kubernetes Node' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 10250
+    ignore_errors: yes
+  - name: Add port 6081 to windows firewall rules
+    win_shell: New-NetFirewallRule -Name ovn.6081 -DisplayName 'ovn.6081' -Enabled True -Direction Inbound -Protocol UDP -Action Allow -LocalPort 6081
+    ignore_errors: yes
+  - name: Install NSSM
+    win_shell: choco install nssm -y
+    ignore_errors: yes
+# Part 2
+- hosts: winnode01
+  gather_facts: no
+  tasks:
+  - name: Setup Kubeovn Service
+    win_shell: setup_kubeovn_service.ps1
+    args:
+      chdir: \k\hybrid\bin
+  - name: Setup Kubelet Service
+    win_shell: setup_kubelet_service.ps1
+    args:
+      chdir: \k\hybrid\bin
+  - name: Enable kubeovn
+    win_shell: Set-Service kubeovn -StartupType Automatic
+  - name: Start kubeovn
+    win_shell: Start-Service kubeovn
+  - name: Enable kubelet
+    win_shell: Set-Service kubelet -StartupType Automatic
+  - name: Start kubelet
+    win_shell: Start-Service kubelet
+#Part 3
+- hosts: winnode01
+  gather_facts: no
+  tasks:
+  - name: Setup Kubeovn Service
+    win_shell: setup_kubeovn_service.ps1
+    args:
+      chdir: \k\hybrid\bin
+  - name: Setup Kubelet Service
+    win_shell: setup_kubelet_service.ps1
+    args:
+      chdir: \k\hybrid\bin
+  - name: Enable kubeovn
+    win_shell: Set-Service kubeovn -StartupType Automatic
+  - name: Start kubeovn
+    win_shell: Start-Service kubeovn
+  - name: Enable kubelet
+    win_shell: Set-Service kubelet -StartupType Automatic
+  - name: Start kubelet
+    win_shell: Start-Service kubelet
