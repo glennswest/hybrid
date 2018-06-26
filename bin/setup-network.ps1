@@ -1,3 +1,8 @@
+$a = Test-Path "C:\k\network_setup"
+IF ($a -eq "True") {Write-Host "Network Already Installed";exit}
+Write-Host "Installing Network"
+date > c:\k\network_setup
+
 $INTERFACE_ALIAS="Ethernet 3"
 Stop-Service ovs-vswitchd -force; Get-VMSwitch -SwitchType External | Disable-VMSwitchExtension "Cloudbase Open vSwitch Extension"
 Get-VMSwitch -SwitchType External | Set-VMSwitch -AllowManagementOS $false
@@ -13,4 +18,5 @@ Set-NetAdapter -Name "$INTERFACE_ALIAS" -MacAddress $FAKE_MAC_ADDRESS -Confirm:$
 Set-NetAdapter -Name br-ex -MacAddress $MAC_ADDRESS -Confirm:$false
 # br-ex will get all the interface details from the DHCP server now
 Enable-NetAdapter br-ex
+Write-Host "SDN Network is setup"
 
