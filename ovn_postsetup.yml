@@ -374,9 +374,10 @@
 - hosts: nodes
   become: yes
   become_user: root
+  serial: 1
   tasks:
   - name: Start ovn-kubernetes-node
-    shell: systemctl start ovn-kubernetes-node
+    shell: systemctl restart ovn-kubernetes-node
 - hosts: localhost
   gather_facts: no
   tasks:
