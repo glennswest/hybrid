@@ -68,6 +68,7 @@
 - hosts: nodes
   become: yes
   become_user: root
+  serial: 1
   vars:
      user: "{{lookup('env','USER')}}"
      config_dir: "/etc/origin/master"
@@ -382,7 +383,7 @@
   gather_facts: no
   tasks:
   - name: Recreate the router
-    shell: oc adm policy add-scc-to-user hostnetwork -z router;oc adm router
+    shell: oc adm policy add-scc-to-user hostnetwork -z router;oc adm router --selector='region=infra'
   - name: Recreate the registry
     shell: oc adm registry
   - name: Recreate the webconsole
