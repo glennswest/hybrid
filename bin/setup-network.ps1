@@ -2,6 +2,7 @@ $a = Test-Path "C:\k\network_setup.lock"
 IF ($a -eq "True") {Write-Host "Network Already Installed";exit}
 Write-Host "Installing Network"
 date > c:\k\network_setup.lock
+$ErrorActionPreference = "SilentlyContinue"
 
 $INTERFACE_ALIAS="Ethernet 3"
 Stop-Service ovs-vswitchd -force; Get-VMSwitch -SwitchType External | Disable-VMSwitchExtension "Cloudbase Open vSwitch Extension"
