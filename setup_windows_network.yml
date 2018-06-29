@@ -1,0 +1,22 @@
+- hosts: windows
+  gather_facts: no
+  tasks:
+  - name: Expand System Disk
+    win_shell: expanddisk.ps1
+    args:
+      chdir: c:\k\hybrid\bin
+  - name: Setup Docker network
+    win_shell: docker-create.ps1
+    args:
+      chdir: c:\k\hybrid\bin
+    async: 60
+    poll:  30
+  - name: Setup SDN
+    win_shell: setup-network.ps1
+    args:
+      chdir: c:\k\hybrid\bin
+    async: 60
+    poll:  30
+  - name: Pause for sdn setup
+    pause:
+       minutes: 2
