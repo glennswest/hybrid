@@ -1,3 +1,117 @@
+# Presetup for WindowsFeature
+- hosts: 127.0.0.1
+  connection: local
+  sudo: yes
+  gather_facts: no
+  vars:
+     user: "{{lookup('env','USER')}}"
+  tasks:
+  - debug: msg="User is {{ user }}"
+  - name: Enable Pip
+    shell: yum-config-manager --enable epel
+  - name: Install PIP and Related
+    shell: yum install -y python-pip
+  - name: disable epel
+    shell: yum-config-manager --disable epel
+  - name: Install PIP and Related
+    shell: yum install -y gcc libffi-devel python-devel krb5-devel krb5-libs krb5-workstation
+  - name: Install pywinrm
+    shell: pip install "pywinrm" --upgrade --force
+  - name: Install pywinrm keberos
+    shell: pip install pywinrm[kerberos]
+- hosts: windows
+  gather_facts: no
+  vars:
+     user: "{{lookup('env','USER')}}"
+  tasks:
+  - name: Remove Old Bin if it exists
+    win_file:
+       path: c:\bin
+       state: absent
+  - name: Create Bin Directory
+    win_file:
+       path: c:\bin
+       state: directory
+  - name: Set Bin Path
+    win_shell: setx ChocolateyBinRoot "C:\bin" -m
+  - name: Set Path
+    win_shell: setx PATH "C:\ProgramData\chocolatey\bin;$env:path;c:\bin;c:\k\hybrid\bin" -m
+  - name: Cleanup old K Directory
+    win_file:
+       path: c:\k
+       state: absent
+  - name: Create K Directory
+    win_file:
+       path: c:\k
+       state: directory
+  - name: Install Package Manager
+    win_shell: Set-ExecutionPolicy Bypass -Scope Process -Force; iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
+  - name: Install 7zip
+    win_shell: choco install 7zip.portable -y
+  - name: Install Vim
+    win_shell: choco install vim -y
+  - name: Install git
+    win_shell: choco install git -y
+  - name: Install wget
+    win_shell: choco install wget -y
+  - name: Install the hyperV Network Tools
+    win_shell: "Install-WindowsFeature -Name RSAT-Hyper-V-Tools"
+  - name: Enable Hyper-V Features
+    win_shell: "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All"
+  - name: Pull down hybrid directoy
+    win_shell: git clone https://github.com/glennswest/hybrid.git c:\k\hybrid
+    ignore_errors: yes
+  - name: Pull openvswitch
+    win_shell: wget.exe https://cloudbase.it/downloads/openvswitch-hyperv-2.7.0-certified.msi -O openvswitch.msi
+  - name: Install open vswitch
+    win_shell: cmd /c 'msiexec /i openvswitch.msi ADDLOCAL="OpenvSwitchCLI,OpenvSwitchDriver,OVNHost" /qn'
+    ignore_errors: yes
+  - name: Turn off Advfireall profiles
+    win_shell: NetSh Advfirewall set allprofiles state off
+  - name: Start ovs service
+    win_shell: Start-Service ovs-vswitchd
+  - name: Set up path for ovn
+    win_shell: setx PATH "C:\Program Files\Cloudbase Solutions\Open vSwitch\bin;$env:path" -m
+# Setup the network on windows machines
+- hosts: windows
+  gather_facts: no
+  serial: 1
+  tasks:
+  - name: Expand System Disk
+    win_shell: expanddisk.ps1
+    args:
+      chdir: c:\k\hybrid\bin
+  - name: Prepare to create docker network
+    win_scheduled_task:
+      name: docker-create
+      description: Create The Docker Network
+      executable: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+      arguments: -ExecutionPolicy Unrestricted -NonInteractive c:\k\hybrid\bin\docker-create.ps1
+      frequency: once
+      enabled:   true
+      time:      "14:00:00"
+      user:      SYSTEM
+  - name: Execute the creation of the docker network
+    win_shell: Start-ScheduledTask -TaskName docker-create
+  - name: Pause for Docker Setup
+    pause:
+       minutes: 1
+  - name: Prepare to setup the windows sdn setup
+    win_scheduled_task:
+      name: setup-network
+      description: Create The Docker Network
+      executable: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+      arguments: -ExecutionPolicy Unrestricted -NonInteractive c:\k\hybrid\bin\setup-network.ps1
+      frequency: once
+      enabled:   true
+      time:      "14:00:00"
+      user:      SYSTEM
+  - name: Execute the setup of the windows sdn
+    win_shell: Start-ScheduledTask -TaskName setup-network
+  - name: Pause for sdn setup
+    pause:
+       minutes: 1
+# Main Windows Setup
 - hosts: masters
   gather_facts: no
   tasks:
