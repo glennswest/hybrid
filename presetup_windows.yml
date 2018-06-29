@@ -35,6 +35,14 @@
     win_shell: setx ChocolateyBinRoot "C:\bin" -m 
   - name: Set Path
     win_shell: setx PATH "C:\ProgramData\chocolatey\bin;$env:path;c:\bin;c:\k\hybrid\bin" -m 
+  - name: Cleanup old K Directory
+    win_file:
+       path: c:\k
+       state: absent
+  - name: Create K Directory
+    win_file:
+       path: c:\k
+       state: directory
   - name: Install Package Manager
     win_shell: Set-ExecutionPolicy Bypass -Scope Process -Force; iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
   - name: Install 7zip
@@ -45,8 +53,13 @@
     win_shell: choco install git -y
   - name: Install wget
     win_shell: choco install wget -y
-  - name: Enable Hyper-V
-    win_shell: Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+  - name: Install the hyperV Network Tools
+    win_shell: "Install-WindowsFeature -Name RSAT-Hyper-V-Tools"
+  - name: Enable Hyper-V Features
+    win_shell: "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All"
+  - name: Pull down hybrid directoy
+    win_shell: git clone https://github.com/glennswest/hybrid.git c:\k\hybrid
+    ignore_errors: yes
   - name: Pull openvswitch
     win_shell: wget.exe https://cloudbase.it/downloads/openvswitch-hyperv-2.7.0-certified.msi -O openvswitch.msi
   - name: Install open vswitch

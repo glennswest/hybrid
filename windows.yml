@@ -167,40 +167,10 @@
     win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-master1.kubeconfig', [System.EnvironmentVariableTarget]::Machine)"
   - name: Set kubeconfig
     win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-master1.kubeconfig')"
-  - name: Install the hyperV Network Tools
-    win_shell: "Install-WindowsFeature -Name RSAT-Hyper-V-Tools"
-  - name: Enable Hyper-V Features
-    win_shell: "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All"
-  - name: Pull down hybrid directoy
-    win_shell: git clone https://github.com/glennswest/hybrid.git c:\k\hybrid
-    ignore_errors: yes
   - name: Build the pause windows container
     win_shell: docker build . -t kubeletwin/pause
     args:
       chdir: c:\k\hybrid
-# Network setup
-- hosts: windows
-  gather_facts: no
-  tasks:
-  - name: Expand System Disk
-    win_shell: expanddisk.ps1
-    args:
-      chdir: c:\k\hybrid\bin
-  - name: Setup Docker network
-    win_shell: docker-create.ps1
-    args:
-      chdir: c:\k\hybrid\bin
-    async: 60
-    poll:  30
-  - name: Setup SDN
-    win_shell: setup-network.ps1
-    args:
-      chdir: c:\k\hybrid\bin
-    async: 60
-    poll:  30
-  - name: Pause for sdn setup
-    pause:
-       minutes: 2    
 # Part 2
 - hosts: master1
   become: yes
