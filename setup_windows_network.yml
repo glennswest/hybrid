@@ -15,11 +15,12 @@
       frequency: once
       enabled:   true
       time:      "14:00:00"
+      user:      SYSTEM
   - name: Execute the creation of the docker network
     win_shell: Start-ScheduledTask -TaskName docker-create
   - name: Pause for Docker Setup
     pause:
-       minutes: 4
+       minutes: 1
   - name: Prepare to setup the windows sdn setup
     win_scheduled_task:
       name: setup-network
@@ -29,8 +30,9 @@
       frequency: once
       enabled:   true
       time:      "14:00:00"
+      user:      SYSTEM
   - name: Execute the setup of the windows sdn
     win_shell: Start-ScheduledTask -TaskName setup-network
   - name: Pause for sdn setup
     pause:
-       minutes: 4
+       minutes: 1
