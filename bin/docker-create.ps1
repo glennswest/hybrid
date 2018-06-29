@@ -1,4 +1,4 @@
-a = Test-Path "C:\k\docker_create.lock"
+$a = Test-Path "C:\k\docker_create.lock"
 IF ($a -eq "True") {Write-Host "Docker Network Already Created";exit}
 Write-Host "Creating Docker Network"
 date > c:\k\docker_create.lock
