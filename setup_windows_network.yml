@@ -1,4 +1,4 @@
-- hosts: winnode01
+- hosts: windows
   gather_facts: no
   serial: 1
   tasks:
