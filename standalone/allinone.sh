@@ -50,6 +50,8 @@ new_nodes
 new_masters
 
 [OSEv3:vars]
+ansible_ssh_user=root
+openshift_disable_check=memory_availability
 oreg_url=registry.access.redhat.com/openshift3/ose-\${component}:\${version}
 openshift_examples_modify_imagestreams=true
 openshift_clock_enabled=true
