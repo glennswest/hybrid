@@ -1,9 +1,7 @@
 #!/bin/bash
 
 
-domain=$(grep search /etc/resolv.conf | awk '{print $2}')
-
-ps -ef | grep allinone.sh > cmdline.out
+yum install -y dnsmasq
 
 systemctl enable dnsmasq.service
 systemctl start dnsmasq.service
@@ -13,8 +11,35 @@ swapoff -a
 subscription-manager repos --disable="*"
 subscription-manager repos --enable="rhel-7-server-rpms" --enable="rhel-7-server-extras-rpms" --enable="rhel-7-fast-datapath-rpms" --enable="rhel-7-server-ose-3.9-rpms" --enable="rhel-7-server-ansible-2.4-rpms"
 yum -y install wget git net-tools atomic-openshift-utils git net-tools bind-utils iptables-services bridge-utils bash-completion httpd-tools nodejs qemu-img kexec-tools sos psacct docker-1.13.1 ansible
+yum install -y atomic-openshift-utils
+yum -y install docker-1.13.1
+yum -y install PyYAML
 yum -y install --enablerepo="epel" jq
+systemctl enable docker
+systemctl start docker
 
+# Enable what is needed for windows nodes
+yum install -y python-dns
+yum -y install --enablerepo="epel" python-devel krb5-devel krb5-libs krb5-workstation python-kerberos python-setuptools
+yum -y install --enablerepo="epel" python-pip
+pip install "pywinrm>=0.2.2"
+pip install pywinrm[kerberos]
+
+
+
+cat <<EOF > /home/${AUSERNAME}/.ansible.cfg
+[defaults]
+remote_tmp     = ~/.ansible/tmp
+local_tmp      = ~/.ansible/tmp
+host_key_checking = False
+forks=30
+gather_timeout=60
+timeout=240
+library = /usr/share/ansible:/usr/share/ansible/openshift-ansible/library
+[ssh_connection]
+control_path = ~/.ansible/cp/ssh%%h-%%p-%%r
+ssh_args = -o ControlMaster=auto -o ControlPersist=600s -o ControlPath=~/.ansible/cp-%h-%p-%r
+EOF
 
 cat <<EOF > /etc/ansible/hosts
 [OSEv3:children]
@@ -70,11 +95,13 @@ openshift.ncc9.com
 openshift.ncc9.com
 EOF
 
-cat <<EOF > /home/${AUSERNAME}/postinstall.yml
+cat <<EOF > ~/postinstall.yml
 ---
 - hosts: masters
   vars:
     description: "auth users"
+    AUSERNAME: openshift
+    PASSWORD: PeterRabbit1
   tasks:
   - name: Create Master Directory
     file: path=/etc/origin/master state=directory
@@ -84,10 +111,12 @@ cat <<EOF > /home/${AUSERNAME}/postinstall.yml
 EOF
 
 
-cat <<EOF > /home/${AUSERNAME}/openshift-install.sh
-ansible-playbook /usr/share/ansible/openshift-ansible/playbooks/byo/config.yml < /dev/null
+cat <<EOF > ~/openshift-install.sh
+ansible-playbook  /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml < /dev/null
+ansible-playbook  /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml < /dev/null || true
 
 yum -y install atomic-openshift-clients
 EOF
 
-./openshift-install.sh
+chmod +x ~/openshift-install.sh
+~/openshift-install.sh | tee openshift-install.out
