@@ -51,6 +51,8 @@ new_masters
 
 [OSEv3:vars]
 ansible_ssh_user=root
+openshift_use_openshift_sdn=false
+os_sdn_network_plugin_name=cni
 openshift_disable_check=memory_availability
 oreg_url=registry.access.redhat.com/openshift3/ose-\${component}:\${version}
 openshift_examples_modify_imagestreams=true
@@ -68,7 +70,6 @@ openshift_master_api_port="{{ console_port }}"
 openshift_master_console_port="{{ console_port }}"
 openshift_override_hostname_check=true
 osm_use_cockpit=false
-#openshift_node_local_quota_per_fsgroup=512Mi
 openshift_install_examples=true
 deployment_type=openshift-enterprise
 openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
@@ -78,10 +79,6 @@ openshift_master_default_subdomain=openshift.ncc9.com
 osm_default_subdomain=app.ncc9.com
 openshift_use_dnsmasq=true
 openshift_public_hostname=openshift.ncc9.com
-
-openshift_master_cluster_method=native
-openshift_master_cluster_hostname=openshift.ncc9.com
-openshift_master_cluster_public_hostname=openshift.ncc9.com
 
 [masters]
 openshift.ncc9.com openshift_node_labels="{'region': 'infra'}"
