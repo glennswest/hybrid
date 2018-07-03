@@ -1,10 +1,10 @@
-- hosts: master1
+- hosts: masters[0]
   become: yes
   become_user: root
   tasks:
   - name: Wait for api
     uri: 
-       url: "http://master1:8443/api"
+       url: "http://{{inventory_hostname}}:8443/api"
        validate_certs: False
     register: result
     until: ('status' in result) and (result.status == 200 or result.status == 401)
@@ -19,7 +19,7 @@
     shell: "oc whoami --show-server"
     register: api_url
   - local_action: copy content="{{ api_url.stdout }}" dest="{{playbook_dir}}/api_host.txt"
-- hosts: master1
+- hosts: masters[0]
   become: yes
   become_user: root
   tasks:
@@ -34,7 +34,7 @@
     shell: oc sa get-token ovn
     register: ovn_key
   - local_action: copy content={{ ovn_key.stdout }} dest="{{playbook_dir}}/ovn.token"
-- hosts: master1
+- hosts: masters[0]
   become: yes
   become_user: root
   tasks:
@@ -138,8 +138,8 @@
                  --k8s-cacert "${config_dir}/ca.crt" \
                  --k8s-token "${token}" \
                  --cluster-subnet "${cluster_cidr}" \
-                 --nb-address "tcp://{{lookup('dig','master1')}}:6641" \
-                  -sb-address "tcp://{{lookup('dig','master1')}}:6642" \
+                 --nb-address "tcp://{{lookup('dig',inventory_hostname)}}:6641" \
+                  -sb-address "tcp://{{lookup('dig',inventory_hostname)}}:6642" \
                   --init-master `hostname` \
                   --service-cluster-ip-range=172.30.0.0/16 \
                   --net-controller
@@ -169,8 +169,8 @@
                  --k8s-cacert "${config_dir}/ca.crt" \
                  --k8s-token "${token}" \
                  --cluster-subnet "${cluster_cidr}" \
-                 --nb-address "tcp://{{lookup('dig','master1')}}:6641" \
-                 --sb-address "tcp://{{lookup('dig','master1')}}:6642" \
+                 --nb-address "tcp://{{lookup('dig',inventory_hostname)}}:6641" \
+                 --sb-address "tcp://{{lookup('dig',inventory_hostname)}}:6642" \
                  --init-gateways \
                  --service-cluster-ip-range=172.30.0.0/16 \
                  --init-node `hostname` 
@@ -195,10 +195,10 @@
          cacert=/etc/origin/master/ca.crt
 
          [ovnnorth]
-         address="tcp://{{lookup('dig','master1')}}:6641" # this master machine's IP address
+         address="tcp://{{lookup('dig',inventory_hostname)}}:6641" # this master machine's IP address
 
          [ovnsouth]
-         address="tcp://{{lookup('dig','master1')}}:6642"
+         address="tcp://{{lookup('dig',inventory_hostname)}}:6642"
   - name: open firewall 6641
     shell: iptables -A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m tcp --dport 6641 -j ACCEPT
   - name: open firewall 6642
@@ -293,7 +293,7 @@
       src:  /etc/openvswitch/ovn_k8s.conf
       dest: /tmp/ovn_k8s.conf
       flat: yes
-- hosts: nodes:!master1
+- hosts: nodes:!masters[0]
   become: yes
   become_user: root
   tasks:
@@ -303,7 +303,7 @@
         enabled: yes
   - name: Start ovn-kubernetes-node
     shell: systemctl start ovn-kubernetes-node
-- hosts: master1
+- hosts: masters[0]
   become: yes
   become_user: root
   tasks:
