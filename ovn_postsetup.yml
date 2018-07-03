@@ -371,6 +371,11 @@
   - name: Wait for cleanup
     pause:
        minutes: 4
+  - name: Restart ovn_kubernetes_node
+    shell: systemctl restart ovn-kubernetes-node
+  - name: Wait for cleanup
+    pause:
+       minutes: 2
 # Sometimes after delete we loose a ovn-kube process
 - hosts: nodes
   become: yes

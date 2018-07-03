@@ -68,8 +68,7 @@ openshift_master_api_port="{{ console_port }}"
 openshift_master_console_port="{{ console_port }}"
 openshift_override_hostname_check=true
 osm_use_cockpit=false
-openshift_node_local_quota_per_fsgroup=512Mi
-azure_resource_group=${RESOURCEGROUP}
+#openshift_node_local_quota_per_fsgroup=512Mi
 openshift_install_examples=true
 deployment_type=openshift-enterprise
 openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
@@ -85,7 +84,7 @@ openshift_master_cluster_hostname=openshift.ncc9.com
 openshift_master_cluster_public_hostname=openshift.ncc9.com
 
 [masters]
-openshift.ncc9.com
+openshift.ncc9.com openshift_node_labels="{'region': 'infra'}"
 
 [etcd]
 openshift.ncc9.com
