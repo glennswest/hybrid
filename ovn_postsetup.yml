@@ -286,7 +286,7 @@
     shell: iptables -t nat -F
   - name: restart atomic-openshift-node
     shell: systemctl restart  atomic-openshift-node
-- hosts: node01
+- hosts: nodes[0]
   tasks:
   - name: Grab /etc/openvswitch/ovn_k8s.conf
     fetch: 
