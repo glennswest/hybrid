@@ -1,0 +1,11 @@
+- hosts: windows
+  gather_facts: no
+  vars:
+     user: "{{lookup('env','USER')}}"
+  tasks:
+  - name: Install Package Manager Provider
+    win_shell: Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
+  - name: Install Docker
+    win_shell: Install-Package -Name docker -ProviderName DockerMsftProvider -Confirm
+
+
