@@ -7,8 +7,13 @@
      user: "{{lookup('env','USER')}}"
   tasks:
   - debug: msg="User is {{ user }}"
-  - name: Enable Pip
-    shell: yum-config-manager --enable epel
+  - name: Add yumutils
+    shell: yum install -y yum-utils
+  - name: Enable Extras
+    shell: yum-config-manager --enable rhel-7-server-extras-rpms
+  - name: Enable EPEL
+    shell: yum install -y  https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm || true
+    ignore_errors: yes
   - name: Install PIP and Related
     shell: yum install -y python-pip
   - name: disable epel
