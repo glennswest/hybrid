@@ -173,9 +173,11 @@
                  --sb-address "tcp://{{lookup('dig',inventory_hostname)}}:6642" \
                  --init-gateways \
                  --service-cluster-ip-range=172.30.0.0/16 \
-                 --init-node `hostname` 
+                 --init-node `hostname`  \
+                 --gateway-localnet
          }
          ovn-kubernetes-node "{{ config_dir }}"
+
   - name: Clear old config file
     file: path=/etc/openvswitch/ovn_k8s.conf state=absent
   - name: Create openvswitch /etc directory
