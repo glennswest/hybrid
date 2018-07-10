@@ -7,18 +7,23 @@
      user: "{{lookup('env','USER')}}"
   tasks:
   - debug: msg="User is {{ user }}"
+  - name: Download epel
+    shell: wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+  - name: Enable epel
+    shell: yum -y install epel-release-latest-7.noarch.rpm
+    ignore_errors: yes
   - name: Enable Pip
-    shell: yum-config-manager --enable epel
+    shell: yum-config-manager --enable epel --enable rhel-x86_64-server-extras-7 --enable rhel-7-server-optional-rpms
   - name: Install PIP and Related
-    shell: yum install -y python-pip
-  - name: disable epel
-    shell: yum-config-manager --disable epel
+    shell: yum install -y python2-pip
   - name: Install PIP and Related
     shell: yum install -y gcc libffi-devel python-devel krb5-devel krb5-libs krb5-workstation
   - name: Install pywinrm
     shell: pip install "pywinrm" --upgrade --force
   - name: Install pywinrm keberos
     shell: pip install pywinrm[kerberos]
+  - name: disable epel
+    shell: yum-config-manager --disable epel --disable rhel-x86_64-server-extras-7 --disable rhel-7-server-optional-rpms
 # Make sure basic components needed for Windows are Auto Installed and Updates Done
 - hosts: windows
   gather_facts: no
