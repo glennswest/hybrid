@@ -29,6 +29,7 @@
     win_ping:
   - name: Install HyperV
     win_shell: Install-WindowsFeature -Name Hyper-V, RSAT-Hyper-V-Tools
+    ignore_errors: yes
   - name: Install the Nuget provider
     win_shell: Install-PackageProvider -Name NuGet -Force
   - name: Install Package Manager Provider
@@ -83,17 +84,13 @@
     win_shell: choco install git -y
   - name: Install wget
     win_shell: choco install wget -y
-  - name: Install the hyperV Network Tools
-    win_shell: "Install-WindowsFeature -Name RSAT-Hyper-V-Tools"
-  - name: Enable Hyper-V Features
-    win_shell: "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All"
   - name: Pull down hybrid directoy
     win_shell: git clone https://github.com/glennswest/hybrid.git c:\k\hybrid
     ignore_errors: yes
   - name: Pull openvswitch
     win_shell: wget.exe https://cloudbase.it/downloads/openvswitch-hyperv-2.7.0-certified.msi -O openvswitch.msi
   - name: Install open vswitch
-    win_shell: cmd /c 'msiexec /i openvswitch.msi ADDLOCAL="OpenvSwitchCLI,OpenvSwitchDriver,OVNHost" /qn'
+    win_shell: msiexec /i openvswitch.msi ADDLOCAL="OpenvSwitchCLI,OpenvSwitchDriver,OVNHost" /qn
     ignore_errors: yes
   - name: Turn off Advfireall profiles
     win_shell: NetSh Advfirewall set allprofiles state off
@@ -160,18 +157,18 @@
     shell: ln -f -s -n /etc/origin/ openshift.local.config
     args:
        chdir: /etc/origin
-    delegate_to: master1
+    delegate_to: masters[0]
   - name: Create Config
     shell: oc adm create-node-config --hostnames={{inventory_hostname}} --node={{inventory_hostname}} --node-dir=/etc/origin/generated-configs/{{inventory_hostname}}
     args:
         chdir: /etc/origin/
-    delegate_to: master1
+    delegate_to: masters[0]
   - name: Create archives per host
     archive:
        path: /etc/origin/generated-configs/{{inventory_hostname}}/*
        dest: /etc/origin/generated-configs/{{inventory_hostname}}.tgz
-    delegate_to: master1
-- hosts: master1
+    delegate_to: masters[0]
+- hosts: masters[0]
   become: yes
   become_user: root
   tasks:
