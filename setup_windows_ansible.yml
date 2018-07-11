@@ -7,6 +7,8 @@
      user: "{{lookup('env','USER')}}"
   tasks:
   - debug: msg="User is {{ user }}"
+  - name: Install PIP and Related
+    shell: yum install -y gcc libffi-devel python-devel krb5-devel krb5-libs krb5-workstation
   - name: Add yumutils
     shell: yum install -y yum-utils
   - name: Enable Extras
@@ -18,10 +20,8 @@
     shell: yum install -y python-pip
   - name: disable epel
     shell: yum-config-manager --disable epel
-  - name: Install PIP and Related
-    shell: yum install -y gcc libffi-devel python-devel krb5-devel krb5-libs krb5-workstation
   - name: Install pywinrm
-    shell: pip install "pywinrm" --upgrade --force
+    shell: pip install "pywinrm" --upgrade 
   - name: Install pywinrm keberos
-    shell: pip install pywinrm[kerberos]
+    shell: pip install pywinrm[kerberos] --upgrade
 
