@@ -50,6 +50,9 @@
   - name: Restart Windows Nodes
     win_reboot:
         reboot_timeout: 3600
+  - name: Sleep a while to make sure we are done with restart from update
+    pause:
+       minutes: 1
   - name: Pull down windowsservercore 1803
     win_shell: docker pull microsoft/windowsservercore:1803
     async: 3600
@@ -221,24 +224,24 @@
       path: /etc/origin/generated-configs
       owner: "{{user}}"
       recurse: yes
-  - name: Create windows directory for master1node files
+  - name: Create windows directory for node files
     file:
          path: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows"
          state: directory
   - name: Fix system-node kubconfig
     copy:
-       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:master1.kubeconfig"
-       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-master1.kubeconfig"
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:{{ groups.masters | first }}.kubeconfig"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.kubeconfig"
        force: yes
   - name: Fix system-node crt
     copy:
-       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:master1.crt"
-       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-master1.crt"
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:{{ groups.masters | first }}.crt"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.crt"
        force: yes
   - name: Fix system-node key
     copy:
-       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:master1.key"
-       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-master1.key"
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:{{ groups.masters | first }}.key"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.key"
        force: yes
 - hosts: windows
   gather_facts: no
@@ -283,7 +286,7 @@
     win_shell: 7z x -aoa /k/{{inventory_hostname}}.tgz  -o\k\
   - name: Unarchvie the config files
     win_shell: 7z x -aoa /k/etc/origin/generated-configs/{{inventory_hostname}}.tgz -o/k
-  - name: Add the master1 cluster config file
+  - name: Add the master cluster config file
     win_copy:
        src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/"
        dest: /k/
@@ -334,10 +337,10 @@
          cacert=/k/ca.crt
 
          [ovnnorth]
-         address="tcp://{{lookup('dig',{{ groups.masters | first }})}}:6641" # this master machine's IP address
+         address="tcp://{{lookup('dig',groups.masters | first )}}:6641" # this master machine's IP address
 
          [ovnsouth]
-         address="tcp://{{lookup('dig','.masters | first }})}}:6642"
+         address="tcp://{{lookup('dig',groups.masters | first )}}:6642"
 
     delegate_to: localhost
 - hosts: windows
