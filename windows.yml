@@ -223,22 +223,22 @@
       recurse: yes
   - name: Create windows directory for master1node files
     file:
-         path: /etc/origin/generated-configs/node-master1/windows
+         path: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows"
          state: directory
   - name: Fix system-node kubconfig
     copy:
-       src: /etc/origin/generated-configs/node-master1/system:node:master1.kubeconfig
-       dest: /etc/origin/generated-configs/node-master1/windows/system-node-master1.kubeconfig
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:master1.kubeconfig"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-master1.kubeconfig"
        force: yes
   - name: Fix system-node crt
     copy:
-       src: /etc/origin/generated-configs/node-master1/system:node:master1.crt
-       dest: /etc/origin/generated-configs/node-master1/windows/system-node-master1.crt
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:master1.crt"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-master1.crt"
        force: yes
   - name: Fix system-node key
     copy:
-       src: /etc/origin/generated-configs/node-master1/system:node:master1.key
-       dest: /etc/origin/generated-configs/node-master1/windows/system-node-master1.key
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:master1.key"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-master1.key"
        force: yes
 - hosts: windows
   gather_facts: no
@@ -285,7 +285,7 @@
     win_shell: 7z x -aoa /k/etc/origin/generated-configs/{{inventory_hostname}}.tgz -o/k
   - name: Add the master1 cluster config file
     win_copy:
-       src: /etc/origin/generated-configs/node-master1/windows/
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/"
        dest: /k/
        force: yes
   - name: Cleanup archive path
@@ -298,15 +298,15 @@
        dest: /k/config
        force: yes
   - name: Set kubeconfig
-    win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-master1.kubeconfig', [System.EnvironmentVariableTarget]::Machine)"
+    win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-1.masters | first }}.kubeconfig', [System.EnvironmentVariableTarget]::Machine)"
   - name: Set kubeconfig
-    win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-master1.kubeconfig')"
+    win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-{{ groups.masters | first }}.kubeconfig')"
   - name: Build the pause windows container
     win_shell: docker build . -t kubeletwin/pause
     args:
       chdir: c:\k\hybrid
 # Part 2
-- hosts: master1
+- hosts: masters[0]
   become: yes
   become_user: root
   tasks:
@@ -334,10 +334,10 @@
          cacert=/k/ca.crt
 
          [ovnnorth]
-         address="tcp://{{lookup('dig','master1')}}:6641" # this master machine's IP address
+         address="tcp://{{lookup('dig',{{ groups.masters | first }})}}:6641" # this master machine's IP address
 
          [ovnsouth]
-         address="tcp://{{lookup('dig','master1')}}:6642"
+         address="tcp://{{lookup('dig','.masters | first }})}}:6642"
 
     delegate_to: localhost
 - hosts: windows
