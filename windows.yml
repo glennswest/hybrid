@@ -52,6 +52,8 @@
         reboot_timeout: 3600
   - name: Pull down windowsservercore 1803
     win_shell: docker pull microsoft/windowsservercore:1803
+    async: 3600
+    poll: 5
   - name: Tag The image
     win_shell: docker tag microsoft/windowsservercore:1803 microsoft/windowsservercore:latest
 - hosts: windows
@@ -99,10 +101,10 @@
     ignore_errors: yes
   - name: Turn off Advfireall profiles
     win_shell: NetSh Advfirewall set allprofiles state off
-  - name: Start ovs service
-    win_shell: Start-Service ovs-vswitchd
   - name: Set up path for ovn
     win_shell: setx PATH "C:\Program Files\Cloudbase Solutions\Open vSwitch\bin;$env:path" -m
+  - name: Start ovs service
+    win_shell: Start-Service ovs-vswitchd
 # Setup the network on windows machines
 - hosts: windows
   gather_facts: no
@@ -162,17 +164,17 @@
     shell: ln -f -s -n /etc/origin/ openshift.local.config
     args:
        chdir: /etc/origin
-    delegate_to: masters[0]
+    delegate_to: "{{ groups.masters | first }}"
   - name: Create Config
     shell: oc adm create-node-config --hostnames={{inventory_hostname}} --node={{inventory_hostname}} --node-dir=/etc/origin/generated-configs/{{inventory_hostname}}
     args:
         chdir: /etc/origin/
-    delegate_to: masters[0]
+    delegate_to: "{{ groups.masters | first }}"
   - name: Create archives per host
     archive:
        path: /etc/origin/generated-configs/{{inventory_hostname}}/*
        dest: /etc/origin/generated-configs/{{inventory_hostname}}.tgz
-    delegate_to: masters[0]
+    delegate_to: "{{ groups.masters | first }}"
 - hosts: masters[0]
   become: yes
   become_user: root
@@ -206,19 +208,6 @@
   vars:
      user: "{{lookup('env','USER')}}"
   tasks:
-  - debug: msg="User is {{ user }}"
-  - name: Enable Pip
-    shell: yum-config-manager --enable epel
-  - name: Install PIP and Related
-    shell: yum install -y python-pip
-  - name: disable epel
-    shell: yum-config-manager --disable epel
-  - name: Install PIP and Related
-    shell: yum install -y gcc libffi-devel python-devel krb5-devel krb5-libs krb5-workstation
-  - name: Install pywinrm
-    shell: pip install "pywinrm" --upgrade --force
-  - name: Install pywinrm keberos
-    shell: pip install pywinrm[kerberos]
   - name: Setup local origin structure
     file:
           path: /etc/origin/generated-configs
