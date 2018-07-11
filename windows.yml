@@ -391,7 +391,7 @@
     win_shell: choco install nssm -y
     ignore_errors: yes
 # Part 2
-- hosts: winnode01
+- hosts: windows
   gather_facts: no
   tasks:
   - name: Setup Kubeovn Service
@@ -411,7 +411,7 @@
   - name: Start kubelet
     win_shell: Start-Service kubelet
 #Part 3
-- hosts: winnode01
+- hosts: windows
   gather_facts: no
   tasks:
   - name: Setup Kubeovn Service
