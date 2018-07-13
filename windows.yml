@@ -53,12 +53,12 @@
   - name: Sleep a while to make sure we are done with restart from update
     pause:
        minutes: 1
-  - name: Pull down windowsservercore 1803
-    win_shell: docker pull microsoft/windowsservercore:1803
+  - name: Pull down windowsservercore 1709
+    win_shell: docker pull microsoft/windowsservercore:1709
     async: 3600
     poll: 5
   - name: Tag The image
-    win_shell: docker tag microsoft/windowsservercore:1803 microsoft/windowsservercore:latest
+    win_shell: docker tag microsoft/windowsservercore:1709 microsoft/windowsservercore:latest
 - hosts: windows
   gather_facts: no
   vars:
