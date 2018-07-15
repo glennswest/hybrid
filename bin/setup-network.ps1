@@ -4,7 +4,7 @@ Write-Host "Installing Network"
 date > c:\k\network_setup.lock
 $ErrorActionPreference = "SilentlyContinue"
 
-$INTERFACE_ALIAS="Ethernet 3"
+$INTERFACE_ALIAS="Ethernet 0"
 Stop-Service ovs-vswitchd -force; Get-VMSwitch -SwitchType External | Disable-VMSwitchExtension "Cloudbase Open vSwitch Extension"
 Get-VMSwitch -SwitchType External | Set-VMSwitch -AllowManagementOS $false
 # Ignore the error from the first command
