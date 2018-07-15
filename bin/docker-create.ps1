@@ -3,6 +3,5 @@ IF ($a -eq "True") {Write-Host "Docker Network Already Created";exit}
 Write-Host "Creating Docker Network"
 date > c:\k\docker_create.lock
 # multinode
-#docker network create -d transparent --gateway 10.128.7.1 --subnet 10.128.7.0/24 -o com.docker.network.windowsshim.interface="Ethernet 3" external
 # Single node
-docker network create -d transparent --gateway 10.128.2.1 --subnet 10.128.2.0/24 -o com.docker.network.windowsshim.interface="Ethernet 0" external
+docker network create -d transparent --gateway 10.128.2.1 --subnet 10.128.2.0/24 -o com.docker.network.windowsshim.interface="Ethernet0" external
