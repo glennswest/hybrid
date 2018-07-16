@@ -19,4 +19,6 @@ Set-NetAdapter -Name "$INTERFACE_ALIAS" -MacAddress $FAKE_MAC_ADDRESS -Confirm:$
 Set-NetAdapter -Name br-ex -MacAddress $MAC_ADDRESS -Confirm:$false
 # br-ex will get all the interface details from the DHCP server now
 Enable-NetAdapter br-ex
+# Make sure arp etc is update to date
+ping 8.8.8.8
 Write-Host "SDN Network is setup"
