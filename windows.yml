@@ -243,6 +243,8 @@
        src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:{{ groups.masters | first }}.key"
        dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.key"
        force: yes
+  - name: Flush arp cache
+    shell: ip -s -s neigh flush all
 - hosts: windows
   gather_facts: no
   vars:
