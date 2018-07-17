@@ -250,25 +250,6 @@
   vars:
      user: "{{lookup('env','USER')}}"
   tasks:
-  - name: Set up the GUID for openvswitch
-    win_shell: "$GUID = (New-Guid).Guid; Write-Output $GUID"
-    register: guid
-  - debug: msg="GUID is {{ guid.stdout }}"
-  - name: create a schedule task
-    win_scheduled_task:
-      name: ovnsetguid
-      description: Set OVN System Guid
-      executable: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
-      arguments: -ExecutionPolicy Unrestricted -NonInteractive ovs-vsctl set Open_vSwitch . external_ids:system-id="{{ guid.stdout | trim  }}"
-      frequency: once
-      enabled:   true
-      time:      "14:00:00"
-  - name: Run the schedule task
-    win_shell: Start-ScheduledTask -TaskName ovnsetguid
-  - name: Pull the systm-id
-    win_shell: ovs-vsctl get Open_vSwitch . external_ids:system-id
-    register: result_guid
-  - debug: msg="Result GUID is {{ result_uid.stdout }}"
   - name: Pull the kubernetes client
     win_shell: wget.exe --no-check-certificate https://dl.k8s.io/v1.9.9/kubernetes-node-windows-amd64.tar.gz -O C:\Windows\Temp\kubernetes.tar.gz
   - name: Unzip kubernetes
@@ -282,7 +263,6 @@
        path: C:\k
        state: directory
        ignore_errors: yes
-
   - name: move the node files
     win_copy:
       src: /etc/origin/generated-configs/{{inventory_hostname}}.tgz
@@ -400,6 +380,21 @@
 - hosts: windows
   gather_facts: no
   tasks:
+  - name: Set up the GUID for openvswitch
+    win_shell: "$GUID = (New-Guid).Guid; Write-Output $GUID"
+    register: guid
+  - debug: msg="GUID is {{ guid.stdout }}"
+  - name: create a schedule task
+    win_scheduled_task:
+      name: ovnsetguid
+      description: Set OVN System Guid
+      executable: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+      arguments: -ExecutionPolicy Unrestricted -NonInteractive ovs-vsctl set Open_vSwitch . external_ids:system-id="{{ guid.stdout | trim  }}"
+      frequency: once
+      enabled:   true
+      time:      "14:00:00"
+  - name: Run the schedule task
+    win_shell: Start-ScheduledTask -TaskName ovnsetguid
   - name: Setup Kubeovn Service
     win_shell: setup_kubeovn_service.ps1
     args:
