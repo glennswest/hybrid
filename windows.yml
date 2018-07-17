@@ -265,6 +265,10 @@
       time:      "14:00:00"
   - name: Run the schedule task
     win_shell: Start-ScheduledTask -TaskName ovnsetguid
+  - name: Pull the systm-id
+    win_shell: ovs-vsctl get Open_vSwitch . external_ids:system-id
+    register: result_guid
+  - debug: msg="Result GUID is {{ result_uid.stdout }}"
   - name: Pull the kubernetes client
     win_shell: wget.exe --no-check-certificate https://dl.k8s.io/v1.9.9/kubernetes-node-windows-amd64.tar.gz -O C:\Windows\Temp\kubernetes.tar.gz
   - name: Unzip kubernetes
