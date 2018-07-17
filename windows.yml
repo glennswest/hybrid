@@ -392,12 +392,10 @@
       arguments: -ExecutionPolicy Unrestricted -NonInteractive ovs-vsctl set Open_vSwitch . external_ids:system-id="{{ guid.stdout | trim  }}"
       frequency: once
       enabled:   true
+      user:      SYSTEM
       time:      "14:00:00"
-  - name: Pause for task setup
-    pause:
-         minutes: 1
   - name: Run the schedule task
-    win_shell: Start-ScheduledTask -TaskName ovnsetguid
+    win_shell: Start-ScheduledTask -TaskName ovnsetguid -AsJob
   - name: Setup Kubeovn Service
     win_shell: setup_kubeovn_service.ps1
     args:
