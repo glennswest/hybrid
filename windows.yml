@@ -393,6 +393,9 @@
       frequency: once
       enabled:   true
       time:      "14:00:00"
+  - name: Pause for task setup
+    pause:
+         minutes: 1
   - name: Run the schedule task
     win_shell: Start-ScheduledTask -TaskName ovnsetguid
   - name: Setup Kubeovn Service
