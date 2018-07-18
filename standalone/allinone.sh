@@ -1,6 +1,9 @@
 #!/bin/bash
 
-
+read -p "Please provide an initial openshift username: " username
+echo "Please provide the password for $username: "
+read -s password
+ 
 yum install -y dnsmasq
 
 systemctl enable dnsmasq.service
@@ -81,21 +84,21 @@ deployment_type=openshift-enterprise
 openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
 openshift_master_manage_htpasswd=false
 
-openshift_master_default_subdomain=app.openshift.ncc9.com
+openshift_master_default_subdomain=app.$1
 openshift_use_dnsmasq=true
-openshift_public_hostname=openshift.ncc9.com
+openshift_public_hostname=$1
 
 [masters]
-openshift.ncc9.com openshift_node_labels="{'region': 'infra'}"
+$1 openshift_node_labels="{'region': 'infra'}"
 
 [etcd]
-openshift.ncc9.com
+$1
 
 [new_nodes]
 [new_masters]
 
 [nodes]
-openshift.ncc9.com
+$1
 EOF
 
 cat <<EOF > ~/postinstall.yml
@@ -103,8 +106,8 @@ cat <<EOF > ~/postinstall.yml
 - hosts: masters
   vars:
     description: "auth users"
-    AUSERNAME: openshift
-    PASSWORD: PeterRabbit1
+    AUSERNAME: $username
+    PASSWORD: $password
   tasks:
   - name: Create Master Directory
     file: path=/etc/origin/master state=directory
