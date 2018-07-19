@@ -31,7 +31,7 @@ echo "theUserName: " $theUserName >> ./allinone.vars
 echo "thePassword: " $thePassword >> ./allinone.vars
 echo "theRepo: " $theRepo >> ./allinone.vars
 mkdir /etc/ansible
-mv ./allinone.var /etc/ansible
+mv ./allinone.vars /etc/ansible
 
 yum install -y dnsmasq
 
