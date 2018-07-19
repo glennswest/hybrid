@@ -63,6 +63,8 @@
   gather_facts: no
   vars:
      user: "{{lookup('env','USER')}}"
+  vars_files:
+     /etc/ansible/allinone.vars
   tasks:
   - name: Remove Old Bin if it exists
     win_file:
@@ -95,7 +97,7 @@
   - name: Install wget
     win_shell: choco install wget -y
   - name: Pull down hybrid directoy
-    win_shell: git clone https://github.com/glennswest/hybrid.git c:\k\hybrid
+    win_shell: git clone {{theRepo}}  c:\k\hybrid
     ignore_errors: yes
   - name: Pull openvswitch
     win_shell: wget.exe https://cloudbase.it/downloads/openvswitch-hyperv-2.7.0-certified.msi -O openvswitch.msi
