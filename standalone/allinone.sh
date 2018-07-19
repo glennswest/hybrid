@@ -1,5 +1,35 @@
 #!/bin/bash
+if [ $# -ne 7 ]
+   then echo;echo "allinone.sh ----- HELP ------";echo "allinone arguments required";echo "allinone.sh LinuxHostName WindowsHostName InternalDomain OpenShiftPublicURL AppPublicURL UserName Password";echo "allinone.sh openshift winnode01 ncc9.com openshift.ncc9.com apps.openshift.com glennswest SuperLamb1";exit
+fi
 
+export LinuxHostName=$1
+export WindowsHostName=$2
+export InternalDomain=$3
+export OpenShiftPublicURL=$4
+export AppPublicURL=$5
+export theUserName=$6
+export thePassword=$7
+export theRepo="https://github.com/glennswest/hybrid"
+export AUSERNAME=$theUserName
+
+echo $0 "Starting"
+echo "Linux Hostname:       " $LinuxHostName
+echo "Windows Hostname:     " $WindowsHostName
+echo "Internal Domain:      " $InternalDomain
+echo "Openshift Public URL: " $OpenShiftPublicURL
+echo "App Public URL:       " $AppPublicURL
+echo "User Name:            " $theUserName
+echo "" > ./allinone.vars
+echo "---" >> ./allinone.vars
+echo "LinuxHostName: " $LinuxHostName >> ./allinone.vars
+echo "WindowsHostName: " $WindowsHostName >> ./allinone.vars
+echo "InternalDomain: " $InternalDomain >> ./allinone.vars
+echo "OpenShiftPublicURL: " $InternalDomain >> ./allinone.vars
+echo "AppPublicURL: " $AppPublicURL >> ./allinone.vars
+echo "theUserName: " $theUserName >> ./allinone.vars
+echo "thePassword: " $thePassword >> ./allinone.vars
+echo "theRepo: " $theRepo >> ./allinone.vars
 
 yum install -y dnsmasq
 
