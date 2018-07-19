@@ -30,6 +30,8 @@ echo "AppPublicURL: " $AppPublicURL >> ./allinone.vars
 echo "theUserName: " $theUserName >> ./allinone.vars
 echo "thePassword: " $thePassword >> ./allinone.vars
 echo "theRepo: " $theRepo >> ./allinone.vars
+mkdir /etc/ansible
+mv ./allinone.var /etc/ansible
 
 yum install -y dnsmasq
 
@@ -58,7 +60,7 @@ pip install pywinrm[kerberos]
 
 
 
-cat <<EOF > /home/${AUSERNAME}/.ansible.cfg
+cat <<EOF > /home/${USER}/.ansible.cfg
 [defaults]
 remote_tmp     = ~/.ansible/tmp
 local_tmp      = ~/.ansible/tmp
@@ -100,7 +102,7 @@ docker_udev_workaround=True
 openshift_node_debug_level="{{ node_debug_level | default(debug_level, true) }}"
 openshift_master_debug_level="{{ master_debug_level | default(debug_level, true) }}"
 openshift_master_access_token_max_seconds=2419200
-openshift_hosted_router_replicas=3
+openshift_hosted_router_replicas=1
 openshift_hosted_registry_replicas=1
 openshift_master_api_port="{{ console_port }}"
 openshift_master_console_port="{{ console_port }}"
@@ -111,21 +113,25 @@ deployment_type=openshift-enterprise
 openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
 openshift_master_manage_htpasswd=false
 
-openshift_master_default_subdomain=app.openshift.ncc9.com
+openshift_master_default_subdomain=$AppPublicURL
 openshift_use_dnsmasq=true
-openshift_public_hostname=openshift.ncc9.com
+openshift_public_hostname=$OpenShiftPublicURL
 
 [masters]
-openshift.ncc9.com openshift_node_labels="{'region': 'infra'}"
+$LinuxHostName openshift_host_name=$LinuxHostName openshift_node_labels="{'region': 'infra'}"
 
 [etcd]
-openshift.ncc9.com
+$LinuxHostName
 
 [new_nodes]
 [new_masters]
 
 [nodes]
-openshift.ncc9.com
+$LinuxHostName
+ 
+[windows]
+$WindowsHostName
+
 EOF
 
 cat <<EOF > ~/postinstall.yml
@@ -133,8 +139,8 @@ cat <<EOF > ~/postinstall.yml
 - hosts: masters
   vars:
     description: "auth users"
-    AUSERNAME: openshift
-    PASSWORD: PeterRabbit1
+    AUSERNAME: $theUserName
+    PASSWORD: $thePassword
   tasks:
   - name: Create Master Directory
     file: path=/etc/origin/master state=directory
@@ -147,9 +153,12 @@ EOF
 cat <<EOF > ~/openshift-install.sh
 ansible-playbook  /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml < /dev/null
 ansible-playbook  /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml < /dev/null || true
+ansible-playbook  ~/postinstall.yml
 
 yum -y install atomic-openshift-clients
 EOF
 
+
 chmod +x ~/openshift-install.sh
 ~/openshift-install.sh | tee openshift-install.out
+
