@@ -12,6 +12,8 @@ export theUserName=$6
 export thePassword=$7
 export theRepo="https://github.com/glennswest/hybrid"
 export AUSERNAME=$theUserName
+export LinuxInternalIP=`nslookup $LinuxHostName | awk '/^Address: / { print $2 ; exit }'`
+export WindowsInternalIP=`nslookup $WindowsHostName | awk '/^Address: / { print $2 ; exit }'`
 
 echo $0 "Starting"
 echo "Linux Hostname:       " $LinuxHostName
@@ -23,15 +25,18 @@ echo "User Name:            " $theUserName
 echo "" > ./allinone.vars
 echo "---" >> ./allinone.vars
 echo "LinuxHostName: " $LinuxHostName >> ./allinone.vars
+echo "LinuxInteralIP: " $LinuxInternalIP >> ./allinone.vars
 echo "WindowsHostName: " $WindowsHostName >> ./allinone.vars
+echo "WindowsInternalIP: " $WindowsInternalIP >> ./allinone.vars
 echo "InternalDomain: " $InternalDomain >> ./allinone.vars
 echo "OpenShiftPublicURL: " $InternalDomain >> ./allinone.vars
 echo "AppPublicURL: " $AppPublicURL >> ./allinone.vars
 echo "theUserName: " $theUserName >> ./allinone.vars
 echo "thePassword: " $thePassword >> ./allinone.vars
 echo "theRepo: " $theRepo >> ./allinone.vars
+
 mkdir /etc/ansible
-mv ./allinone.vars /etc/ansible
+cp -f ./allinone.vars /etc/ansible
 
 yum install -y dnsmasq
 
