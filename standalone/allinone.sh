@@ -33,7 +33,6 @@ echo "theRepo: " $theRepo >> ./parameters.vars
 
 mkdir /etc/ansible
 cp -f ./parameters.vars /etc/ansible
-exit
 
 yum install -y dnsmasq
 
