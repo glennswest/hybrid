@@ -139,14 +139,13 @@ cat <<EOF > ~/postinstall.yml
 ---
 - hosts: masters
   vars:
-    description: "auth users"
-    AUSERNAME: $theUserName
-    PASSWORD: $thePassword
+  vars_files:
+   - /etc/ansible/parameters.vars
   tasks:
   - name: Create Master Directory
     file: path=/etc/origin/master state=directory
   - name: add initial user to Red Hat OpenShift Container Platform
-    shell: htpasswd -c -b /etc/origin/master/htpasswd ${AUSERNAME} ${PASSWORD}
+    shell: htpasswd -c -b /etc/origin/master/htpasswd ${theUserName} ${thePassword}
 
 EOF
 
