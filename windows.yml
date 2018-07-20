@@ -64,7 +64,7 @@
   vars:
      user: "{{lookup('env','USER')}}"
   vars_files:
-     /etc/ansible/allinone.vars
+   - /etc/ansible/parameters.vars
   tasks:
   - name: Remove Old Bin if it exists
     win_file:
@@ -144,9 +144,12 @@
       enabled:   true
       time:      "14:00:00"
       user:      SYSTEM
+  - name: Pause for preparation of sdn setup
+    pause:
+       minutes: 1
   - name: Execute the setup of the windows sdn
     win_shell: Start-ScheduledTask -TaskName setup-network
-  - name: Pause for sdn setup
+  - name: Pause for sdn setup completion
     pause:
        minutes: 1
 # Main Windows Setup

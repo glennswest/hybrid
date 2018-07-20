@@ -22,21 +22,18 @@ echo "Internal Domain:      " $InternalDomain
 echo "Openshift Public URL: " $OpenShiftPublicURL
 echo "App Public URL:       " $AppPublicURL
 echo "User Name:            " $theUserName
-echo "" > ./allinone.vars
-echo "---" >> ./allinone.vars
-echo "LinuxHostName: " $LinuxHostName >> ./allinone.vars
-echo "LinuxInteralIP: " $LinuxInternalIP >> ./allinone.vars
-echo "WindowsHostName: " $WindowsHostName >> ./allinone.vars
-echo "WindowsInternalIP: " $WindowsInternalIP >> ./allinone.vars
-echo "InternalDomain: " $InternalDomain >> ./allinone.vars
-echo "OpenShiftPublicURL: " $InternalDomain >> ./allinone.vars
-echo "AppPublicURL: " $AppPublicURL >> ./allinone.vars
-echo "theUserName: " $theUserName >> ./allinone.vars
-echo "thePassword: " $thePassword >> ./allinone.vars
-echo "theRepo: " $theRepo >> ./allinone.vars
+echo "" > ./parameters.vars
+echo "---" >> ./parameters.vars
+echo "InternalDomain: " $InternalDomain >> ./parameters.vars
+echo "OpenShiftPublicURL: " $OpenShiftPublicURL >> ./parameters.vars
+echo "AppPublicURL: " $AppPublicURL >> ./parameters.vars
+echo "theUserName: " $theUserName >> ./parameters.vars
+echo "thePassword: " $thePassword >> ./parameters.vars
+echo "theRepo: " $theRepo >> ./parameters.vars
 
 mkdir /etc/ansible
-cp -f ./allinone.vars /etc/ansible
+cp -f ./parameters.vars /etc/ansible
+exit
 
 yum install -y dnsmasq
 

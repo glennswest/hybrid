@@ -20,6 +20,7 @@ http://github.com/glennswest/hybrid
 Requirements:
 1. Linux node with host name set, and static ip, and a proper search domain
 2. Windows node with a hostname set, and dhcp that returns same ip all the time, matching hostname.
+3. The windows node must have the correct host name, make sure you rename it.
 
 Overview:
 1. Install two nodes, one with RHEL 7.5 and one with Windows 1703.
