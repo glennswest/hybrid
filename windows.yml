@@ -215,6 +215,8 @@
   gather_facts: no
   vars:
      user: "{{lookup('env','USER')}}"
+  vars_files:
+   - /etc/ansible/parameters.vars
   tasks:
   - name: Setup local origin structure
     file:
@@ -235,8 +237,8 @@
          state: directory
   - name: Fix system-node kubconfig
     copy:
-       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:{{ groups.masters | first }}.kubeconfig"
-       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.kubeconfig"
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}.{{InternalDomain}}/system:node:{{ groups.masters | first }}.{{InternalDomain}}.kubeconfig"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}.{{InternalDomain}}/windows/system-node-{{ groups.masters | first }}.{{InternalDomain}}.kubeconfig"
        force: yes
   - name: Fix system-node crt
     copy:
