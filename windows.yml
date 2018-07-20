@@ -238,17 +238,17 @@
   - name: Fix system-node kubconfig
     copy:
        src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}.{{InternalDomain}}/system:node:{{ groups.masters | first }}.{{InternalDomain}}.kubeconfig"
-       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}.{{InternalDomain}}/windows/system-node-{{ groups.masters | first }}.{{InternalDomain}}.kubeconfig"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.{{InternalDomain}}.kubeconfig"
        force: yes
   - name: Fix system-node crt
     copy:
-       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:{{ groups.masters | first }}.crt"
-       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.crt"
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}.{{InternalDomain}}/system:node:{{ groups.masters | first }}.{{InternalDomain}}.crt"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.{{InternalDomain}}.crt"
        force: yes
   - name: Fix system-node key
     copy:
-       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/system:node:{{ groups.masters | first }}.key"
-       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.key"
+       src: "/etc/origin/generated-configs/node-{{ groups.masters | first }}.{{InternalDomain}}/system:node:{{ groups.masters | first }}.{{InternalDomain}}.key"
+       dest: "/etc/origin/generated-configs/node-{{ groups.masters | first }}/windows/system-node-{{ groups.masters | first }}.{InternalDomain}}.key"
        force: yes
   - name: Flush arp cache
     shell: ip -s -s neigh flush all

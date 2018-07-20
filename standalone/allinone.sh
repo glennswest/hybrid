@@ -14,6 +14,7 @@ export theRepo="https://github.com/glennswest/hybrid"
 export AUSERNAME=$theUserName
 export LinuxInternalIP=`nslookup $LinuxHostName | awk '/^Address: / { print $2 ; exit }'`
 export WindowsInternalIP=`nslookup $WindowsHostName | awk '/^Address: / { print $2 ; exit }'`
+export WindowsNicName="Ethernet0"
 
 echo $0 "Starting"
 echo "Linux Hostname:       " $LinuxHostName
@@ -30,6 +31,7 @@ echo "AppPublicURL: " $AppPublicURL >> ./parameters.vars
 echo "theUserName: " $theUserName >> ./parameters.vars
 echo "thePassword: " $thePassword >> ./parameters.vars
 echo "theRepo: " $theRepo >> ./parameters.vars
+echo "WindowsNicName: " $WindowsNicName >> ./parameters.vars
 
 mkdir /etc/ansible
 cp -f ./parameters.vars /etc/ansible
