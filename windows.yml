@@ -36,7 +36,7 @@
     win_shell: Install-WindowsFeature -Name Hyper-V, RSAT-Hyper-V-Tools
     ignore_errors: yes
   - name: Install the Nuget provider
-    win_shell: Install-PackageProvider -Name NuGet -Force
+    win_shell: Find-PackageProvider -Name "Nuget" | Install-PackageProvider -Verbose -Force
   - name: Install Package Manager Provider
     win_shell: Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
   - name: Install Docker Provider
