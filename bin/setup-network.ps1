@@ -4,8 +4,10 @@ Write-Host "Installing Network"
 date > c:\k\network_setup.lock
 $ErrorActionPreference = "SilentlyContinue"
 
-$roughname = Get-NetAdapter | where adminstatus -eq "up" | Format-List -Property "Name" | Out-String
+$roughname = Get-NetRoute | Where-Object -FilterScript {$_.NextHop -Ne "::"} | Where-Object -FilterScript { $_.NextHop -Ne "0.0.0.0" } | Where-Object -FilterScript { ($_.NextHop.SubString(0,6) -Ne "fe80::") } | Get-NetAdapter | Format-List -Property "Name" | Out-String
 $INTERFACE_ALIAS= $roughname.Substring(11)
+echo $INTERFACE_ALIAS
+
 Stop-Service ovs-vswitchd -force; Get-VMSwitch -SwitchType External | Disable-VMSwitchExtension "Cloudbase Open vSwitch Extension"
 Get-VMSwitch -SwitchType External | Set-VMSwitch -AllowManagementOS $false
 # Ignore the error from the first command
