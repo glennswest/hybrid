@@ -4,7 +4,8 @@ Write-Host "Installing Network"
 date > c:\k\network_setup.lock
 $ErrorActionPreference = "SilentlyContinue"
 
-$INTERFACE_ALIAS="Ethernet0"
+$roughname = Get-NetAdapter | where adminstatus -eq "up" | Format-List -Property "Name" | Out-String
+$INTERFACE_ALIAS= $roughname.Substring(11)
 Stop-Service ovs-vswitchd -force; Get-VMSwitch -SwitchType External | Disable-VMSwitchExtension "Cloudbase Open vSwitch Extension"
 Get-VMSwitch -SwitchType External | Set-VMSwitch -AllowManagementOS $false
 # Ignore the error from the first command
@@ -19,6 +20,8 @@ Set-NetAdapter -Name "$INTERFACE_ALIAS" -MacAddress $FAKE_MAC_ADDRESS -Confirm:$
 Set-NetAdapter -Name br-ex -MacAddress $MAC_ADDRESS -Confirm:$false
 # br-ex will get all the interface details from the DHCP server now
 Enable-NetAdapter br-ex
+# First time may not work
+Set-NetAdapter -Name br-ex -MacAddress $MAC_ADDRESS -Confirm:$false
 # Make sure arp etc is update to date
 ping 8.8.8.8
 Write-Host "SDN Network is setup"
