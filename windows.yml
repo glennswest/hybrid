@@ -5,7 +5,6 @@
   gather_facts: no
   vars:
      user: "{{lookup('env','USER')}}"
-     ipv6cmd: !unsafe New-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\' -Name  'DisabledComponents' -Value '0xffffffff' -PropertyType 'DWord'
   tasks:
   - debug: msg="User is {{ user }}"
   - name: Install PIP and Related
@@ -30,6 +29,7 @@
   gather_facts: no
   vars:
      user: "{{lookup('env','USER')}}"
+     ipv6cmd: !unsafe New-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\' -Name  'DisabledComponents' -Value '0xffffffff' -PropertyType 'DWord'
   tasks:
   - name: Check Comm
     win_ping:
