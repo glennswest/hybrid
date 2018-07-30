@@ -130,7 +130,7 @@ $LinuxHostName
 [new_masters]
 
 [nodes]
-$LinuxHostName
+$LinuxHostName openshift_host_name=$LinuxHostName
  
 [windows]
 $WindowsHostName
