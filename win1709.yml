@@ -1,0 +1,13 @@
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: Check Comm
+    win_ping:
+  - name: Rename Computer
+    win_shell: Rename-Computer -NewName {inventory_hostname} -Force
+  - name: Enable RDP
+    win_shell: Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 0
+  - name: Enable RDP Firewall
+    win_shell: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+  - name: Enable Ping
+    win_shell: Set-NetFirewallRule -Name FPS-ICMP4-ERQ-In -Enabled True;Set-NetFirewallRule -Name FPS-ICMP4-ERQ-out -Enabled True
