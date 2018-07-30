@@ -1,10 +1,10 @@
-- hosts: all
+- hosts: windows
   gather_facts: no
   tasks:
   - name: Check Comm
     win_ping:
   - name: Rename Computer
-    win_shell: Rename-Computer -NewName {inventory_hostname} -Force
+    win_shell: Rename-Computer -NewName "{{inventory_hostname}}" -Force
   - name: Enable RDP
     win_shell: Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 0
   - name: Enable RDP Firewall
