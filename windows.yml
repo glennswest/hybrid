@@ -5,6 +5,7 @@
   gather_facts: no
   vars:
      user: "{{lookup('env','USER')}}"
+     ipv6cmd: !unsafe New-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\' -Name  'DisabledComponents' -Value '0xffffffff' -PropertyType 'DWord'
   tasks:
   - debug: msg="User is {{ user }}"
   - name: Install PIP and Related
@@ -32,8 +33,8 @@
   tasks:
   - name: Check Comm
     win_ping:
-  - name: Disable ipv6
-    win_shell: New-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\' -Name  'DisabledComponents' -Value '0xffffffff' -PropertyType 'DWord'
+  - name: Disable Extra IP Stack
+    win_shell: "{{ipv6cmd}}"
   - name: Install HyperV
     win_shell: Install-WindowsFeature -Name Hyper-V, RSAT-Hyper-V-Tools
     ignore_errors: yes
