@@ -35,6 +35,7 @@
     win_ping:
   - name: Disable Extra IP Stack
     win_shell: "{{ipv6cmd}}"
+    ignore_errors: yes
   - name: Rename Computer
     win_shell: Rename-Computer -NewName "{{inventory_hostname}}" -Force
   - name: Restart Windows Nodes (For rename)
