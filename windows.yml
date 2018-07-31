@@ -38,6 +38,7 @@
     ignore_errors: yes
   - name: Rename Computer
     win_shell: Rename-Computer -NewName "{{inventory_hostname}}" -Force
+    ignore_errors: yes
   - name: Restart Windows Nodes (For rename)
     win_reboot:
         reboot_timeout: 3600
