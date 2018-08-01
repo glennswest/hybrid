@@ -3,7 +3,7 @@ IF ($a -eq "True") {Write-Host "Docker Network Already Created";exit}
 Write-Host "Creating Docker Network"
 date > c:\k\docker_create.lock
 $roughname = Get-NetRoute | Where-Object -FilterScript {$_.NextHop -Ne "::"} | Where-Object -FilterScript { $_.NextHop -Ne "0.0.0.0" } | Where-Object -FilterScript { ($_.NextHop.SubString(0,6) -Ne "fe80::") } | Get-NetAdapter | Format-List -Property "Name" | Out-String
-$INTERFACE_ALIAS= $roughname.Substring(11)
+$INTERFACE_ALIAS= $roughname.Substring(11) -replace "`n|`r",""
 echo $INTERFACE_ALIAS
 # multinode
 #docker network create -d transparent --gateway 10.128.2.1 --subnet 10.128.2.0/24 -o com.docker.network.windowsshim.interface="Ethernet0" external
