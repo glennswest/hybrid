@@ -63,12 +63,6 @@
   - name: Sleep a while to make sure we are done with restart from update
     pause:
        minutes: 1
-  - name: Pull down windowsservercore 1709
-    win_shell: docker pull microsoft/windowsservercore:1709
-    async: 3600
-    poll: 5
-  - name: Tag The image
-    win_shell: docker tag microsoft/windowsservercore:1709 microsoft/windowsservercore:latest
 - hosts: windows
   gather_facts: no
   vars:
@@ -307,6 +301,12 @@
     win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-1.masters | first }}.kubeconfig', [System.EnvironmentVariableTarget]::Machine)"
   - name: Set kubeconfig
     win_shell: "[System.Environment]::SetEnvironmentVariable('KUBECONFIG', 'c:/k/config;c:/k/system-node-{{ groups.masters | first }}.kubeconfig')"
+  - name: Pull down windowsservercore 1709
+    win_shell: docker pull microsoft/windowsservercore:1709
+    async: 3600
+    poll: 5
+  - name: Tag The image
+    win_shell: docker tag microsoft/windowsservercore:1709 microsoft/windowsservercore:latest
   - name: Build the pause windows container
     win_shell: docker build . -t kubeletwin/pause
     args:
