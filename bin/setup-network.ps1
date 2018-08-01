@@ -4,7 +4,8 @@ Write-Host "Installing Network"
 date > c:\k\network_setup.lock
 $ErrorActionPreference = "SilentlyContinue"
 
-$INTERFACE_ALIAS = Get-Content "C:\k\interface.txt" | Out-String
+$roughname = Get-Content "C:\k\interface.txt" | Out-String
+$INTERFACE_ALIAS= $roughname.Substring(11) -replace "`n|`r",""
 echo $INTERFACE_ALIAS
 
 Stop-Service ovs-vswitchd -force; Get-VMSwitch -SwitchType External | Disable-VMSwitchExtension "Cloudbase Open vSwitch Extension"
