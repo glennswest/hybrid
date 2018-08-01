@@ -4,6 +4,7 @@ Write-Host "Installing Network"
 date > c:\k\network_setup.lock
 $ErrorActionPreference = "SilentlyContinue"
 
+# The name is saved in the docker setup
 $roughname = Get-Content "C:\k\interface.txt" | Out-String
 $INTERFACE_ALIAS= $roughname -replace "`n|`r",""
 echo $INTERFACE_ALIAS
